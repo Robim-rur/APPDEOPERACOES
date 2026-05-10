@@ -349,6 +349,22 @@ if not df.empty:
     tabela["Dias em Aberto"] = dias_aberto_lista
     tabela["Status Tempo"] = status_tempo_lista
 
+    # =====================================================
+    # FORMATAÇÃO VISUAL DO RESULTADO R$
+    # =====================================================
+
+    tabela_exibir = tabela.copy()
+
+    tabela_exibir["Resultado R$"] = tabela_exibir[
+        "Resultado R$"
+    ].apply(
+        lambda x: (
+            f"R$ {x:,.2f}"
+            if pd.notnull(x)
+            else "-"
+        )
+    )
+
     colunas_exibir = [
         "Data Compra",
         "Ticker",
@@ -358,11 +374,12 @@ if not df.empty:
         "Estratégia",
         "Status",
         "Dias em Aberto",
-        "Status Tempo"
+        "Status Tempo",
+        "Resultado R$"
     ]
 
     st.dataframe(
-        tabela[colunas_exibir],
+        tabela_exibir[colunas_exibir],
         use_container_width=True,
         hide_index=True
     )
