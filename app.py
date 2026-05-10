@@ -158,25 +158,6 @@ def classificar_tempo(dias):
 
 
 # =========================================================
-# NOVA FUNÇÃO - EFICIÊNCIA
-# =========================================================
-
-def classificar_eficiencia(media_dias):
-
-    if media_dias <= 15:
-        return "🟢 Excelente"
-
-    elif media_dias <= 35:
-        return "🟡 Boa"
-
-    elif media_dias <= 60:
-        return "🟠 Média"
-
-    else:
-        return "🔴 Capital Travado"
-
-
-# =========================================================
 # SESSION STATE
 # =========================================================
 
@@ -669,51 +650,6 @@ with st.expander(
             f"📉 Pior ciclo: "
             f"{pior_trade['Ticker']} "
             f"({pior_trade['Resultado %']:.2f}%)"
-        )
-
-        # =====================================================
-        # NOVO - RANKING DE EFICIÊNCIA
-        # =====================================================
-
-        st.divider()
-
-        st.subheader("⭐ Ranking de Eficiência do Capital")
-
-        ranking = (
-            ops_encerradas
-            .groupby("Ticker")
-            .agg({
-                "Ticker": "count",
-                "Duração (Dias)": "mean",
-                "Resultado R$": "sum"
-            })
-            .rename(columns={
-                "Ticker": "Ciclos",
-                "Duração (Dias)": "Média Dias",
-                "Resultado R$": "Lucro Total R$"
-            })
-        )
-
-        ranking["Média Dias"] = ranking[
-            "Média Dias"
-        ].round(1)
-
-        ranking["Lucro Total R$"] = ranking[
-            "Lucro Total R$"
-        ].round(2)
-
-        ranking["Eficiência"] = ranking[
-            "Média Dias"
-        ].apply(classificar_eficiencia)
-
-        ranking = ranking.sort_values(
-            by="Média Dias",
-            ascending=True
-        )
-
-        st.dataframe(
-            ranking,
-            use_container_width=True
         )
 
     else:
