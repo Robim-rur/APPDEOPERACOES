@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime, date
 import os
 import uuid
+import shutil
 
 # =========================================================
 # CONFIGURAÇÃO DA PÁGINA
@@ -43,55 +44,49 @@ def garantir_colunas(df):
 
 def carregar_dados():
 
-    # =====================================================
-    # TENTA CARREGAR CSV EXISTENTE
-    # =====================================================
-
     if os.path.exists(DB_FILE):
 
         try:
 
             df = pd.read_csv(DB_FILE)
 
-            if not df.empty:
+            df = garantir_colunas(df)
 
-                df = garantir_colunas(df)
+            if "Data Compra" in df.columns:
 
-                if "Data Compra" in df.columns:
+                df["Data Compra"] = pd.to_datetime(
+                    df["Data Compra"],
+                    errors="coerce"
+                ).dt.date
 
-                    df["Data Compra"] = pd.to_datetime(
-                        df["Data Compra"],
-                        errors="coerce"
-                    ).dt.date
+            if "Data Venda" in df.columns:
 
-                if "Data Venda" in df.columns:
+                df["Data Venda"] = pd.to_datetime(
+                    df["Data Venda"],
+                    errors="coerce"
+                ).dt.date
 
-                    df["Data Venda"] = pd.to_datetime(
-                        df["Data Venda"],
-                        errors="coerce"
-                    ).dt.date
+            ids_vazios = (
+                df["ID"].isna() |
+                (df["ID"] == "")
+            )
 
-                ids_vazios = (
-                    df["ID"].isna() |
-                    (df["ID"] == "")
-                )
+            quantidade_ids = ids_vazios.sum()
 
-                quantidade_ids = ids_vazios.sum()
+            if quantidade_ids > 0:
 
-                if quantidade_ids > 0:
+                novos_ids = [
+                    str(uuid.uuid4())[:8]
+                    for _ in range(quantidade_ids)
+                ]
 
-                    novos_ids = [
-                        str(uuid.uuid4())[:8]
-                        for _ in range(quantidade_ids)
-                    ]
+                df.loc[ids_vazios, "ID"] = novos_ids
 
-                    df.loc[ids_vazios, "ID"] = novos_ids
-
-                return df
+            return df
 
         except Exception as e:
 
-            st.error(f"Erro ao carregar CSV: {e}")
+            st.error(f"Erro ao carregar arquivo: {e}")
 
     # =====================================================
     # DADOS INICIAIS
@@ -258,7 +253,6 @@ def carregar_dados():
             "Resultado R$": None,
             "Status": "Aberta"
         }
-
     ]
 
     return pd.DataFrame(dados_iniciais)
@@ -268,7 +262,37 @@ def salvar_dados(df):
 
     try:
 
-        df.to_csv(DB_FILE, index=False)
+        # =================================================
+        # BACKUP AUTOMÁTICO
+        # =================================================
+
+        if os.path.exists(DB_FILE):
+
+            backup_dir = "backups"
+
+            os.makedirs(
+                backup_dir,
+                exist_ok=True
+            )
+
+            timestamp = datetime.now().strftime(
+                "%Y%m%d_%H%M%S"
+            )
+
+            backup_file = os.path.join(
+                backup_dir,
+                f"operacoes_backup_{timestamp}.csv"
+            )
+
+            shutil.copy(
+                DB_FILE,
+                backup_file
+            )
+
+        df.to_csv(
+            DB_FILE,
+            index=False
+        )
 
     except Exception as e:
 
@@ -285,10 +309,10 @@ def calcular_dias_aberto(data_compra):
 
 def classificar_tempo(dias):
 
-    if dias <= 15:
+    if dias <= 30:
         return "🟢 Saudável"
 
-    elif dias <= 45:
+    elif dias <= 60:
         return "🟡 Atenção"
 
     else:
@@ -343,43 +367,63 @@ if not ops_encerradas.empty:
             1
         )
 
+lucro_total = 0
+
+if not ops_encerradas.empty:
+
+    lucro_total = ops_encerradas[
+        "Resultado R$"
+    ].fillna(0).sum()
+
 # =========================================================
 # RESUMO EXECUTIVO
 # =========================================================
 
 st.subheader("📌 Resumo Executivo")
 
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3, col4, col5 = st.columns(5)
 
 with col1:
+
     st.metric(
         "Operações Abertas",
         len(ops_abertas)
     )
 
 with col2:
+
     st.metric(
         "Capital Alocado",
         f"R$ {capital_alocado:,.2f}"
     )
 
 with col3:
+
     st.metric(
-        "Tempo Médio até Venda",
+        "Tempo Médio",
         f"{tempo_medio} dias"
     )
 
 with col4:
+
     st.metric(
-        "Ciclos Concluídos",
+        "Ciclos",
         ciclos_concluidos
     )
 
+with col5:
+
+    st.metric(
+        "Lucro Total",
+        f"R$ {lucro_total:,.2f}"
+    )
+
 # =========================================================
-# ALERTA CAPITAL PARADO
+# ALERTAS
 # =========================================================
 
-ops_lentas = []
+ops_atencao = []
+ops_criticas = []
 
 for idx, row in ops_abertas.iterrows():
 
@@ -387,17 +431,30 @@ for idx, row in ops_abertas.iterrows():
         row["Data Compra"]
     )
 
-    if dias > 45:
+    if dias > 60:
 
-        ops_lentas.append(
+        ops_criticas.append(
             row["Ticker"]
         )
 
-if len(ops_lentas) > 0:
+    elif dias > 30:
+
+        ops_atencao.append(
+            row["Ticker"]
+        )
+
+if len(ops_atencao) > 0:
 
     st.warning(
-        f"⚠️ {len(ops_lentas)} operação(ões) acima de 45 dias: "
-        + ", ".join(ops_lentas)
+        "🟡 Operações acima de 30 dias: "
+        + ", ".join(ops_atencao)
+    )
+
+if len(ops_criticas) > 0:
+
+    st.error(
+        "🔴 Operações acima de 60 dias: "
+        + ", ".join(ops_criticas)
     )
 
 # =========================================================
@@ -581,12 +638,6 @@ if not df.empty:
         hide_index=True
     )
 
-else:
-
-    st.info(
-        "Nenhuma operação encontrada."
-    )
-
 # =========================================================
 # ENCERRAMENTO
 # =========================================================
@@ -594,6 +645,10 @@ else:
 st.divider()
 
 st.subheader("🏁 Registrar Venda")
+
+ops_abertas = st.session_state.operacoes[
+    st.session_state.operacoes["Status"] == "Aberta"
+]
 
 if not ops_abertas.empty:
 
@@ -740,11 +795,11 @@ with st.expander(
 
         resultado_total = ops_encerradas[
             "Resultado R$"
-        ].sum()
+        ].fillna(0).sum()
 
         retorno_medio = ops_encerradas[
             "Resultado %"
-        ].mean()
+        ].fillna(0).mean()
 
         melhor_trade = ops_encerradas.loc[
             ops_encerradas[
@@ -778,6 +833,48 @@ with st.expander(
             f"📉 Pior ciclo: "
             f"{pior_trade['Ticker']} "
             f"({pior_trade['Resultado %']:.2f}%)"
+        )
+
+        # =================================================
+        # RANKING POR TICKER
+        # =================================================
+
+        st.divider()
+
+        st.subheader(
+            "🏆 Ranking de Eficiência"
+        )
+
+        ranking = (
+            ops_encerradas
+            .groupby("Ticker")
+            .agg({
+                "Ticker": "count",
+                "Duração (Dias)": "mean",
+                "Resultado R$": "sum"
+            })
+            .rename(columns={
+                "Ticker": "Ciclos",
+                "Duração (Dias)": "Média Dias",
+                "Resultado R$": "Lucro Total"
+            })
+            .sort_values(
+                by="Média Dias",
+                ascending=True
+            )
+        )
+
+        ranking["Média Dias"] = ranking[
+            "Média Dias"
+        ].round(1)
+
+        ranking["Lucro Total"] = ranking[
+            "Lucro Total"
+        ].round(2)
+
+        st.dataframe(
+            ranking,
+            use_container_width=True
         )
 
     else:
