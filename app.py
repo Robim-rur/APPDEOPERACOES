@@ -56,17 +56,27 @@ with st.expander("➕ Registrar Nova Operação", expanded=False):
         qtd = st.number_input("Quantidade", min_value=1, step=1)
         preco_compra = st.number_input("Preço de Compra (R$)", min_value=0.01, format="%.2f")
     with col3:
-        estrategia = st.selectbox("Estratégia / App Origem", ["auvppullback", "SAZONALIDADE", "SAZONALIDADE/bdrsetfspullback", "Outros"])
+        # Lógica para permitir digitar nova estratégia
+        opcoes_estrat = ["auvppullback", "SAZONALIDADE", "SAZONALIDADE/bdrsetfspullback", "Outra (Digitar...)"]
+        selecao = st.selectbox("Estratégia / App Origem", opcoes_estrat)
+        
+        if selecao == "Outra (Digitar...)":
+            estrategia_final = st.text_input("Digite o nome da Estratégia/App")
+        else:
+            estrategia_final = selecao
+            
         alvo = preco_compra * 1.03
         st.info(f"🎯 Alvo de Venda (3%): R$ {alvo:.2f}")
 
     if st.button("Salvar Operação"):
-        if ticker:
-            nova_op = {"Data Compra": data_compra, "Ticker": ticker, "Qtd": qtd, "Preço Compra": preco_compra, "Alvo (3%)": round(alvo, 2), "Estratégia": estrategia, "Data Venda": None, "Duração (Dias)": None, "Status": "Aberta"}
+        if ticker and estrategia_final:
+            nova_op = {"Data Compra": data_compra, "Ticker": ticker, "Qtd": qtd, "Preço Compra": preco_compra, "Alvo (3%)": round(alvo, 2), "Estratégia": estrategia_final, "Data Venda": None, "Duração (Dias)": None, "Status": "Aberta"}
             st.session_state.operacoes = pd.concat([st.session_state.operacoes, pd.DataFrame([nova_op])], ignore_index=True)
             salvar_dados(st.session_state.operacoes)
             st.success(f"Operação com {ticker} registrada!")
             st.rerun()
+        else:
+            st.warning("Por favor, preencha o Ticker e a Estratégia.")
 
 # --- VISUALIZAÇÃO E EDIÇÃO ---
 st.subheader("📝 Histórico de Operações")
