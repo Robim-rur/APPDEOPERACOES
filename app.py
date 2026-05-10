@@ -21,6 +21,26 @@ DB_FILE = "operacoes.csv"
 # FUNÇÕES
 # =========================================================
 
+def garantir_colunas(df):
+
+    colunas_necessarias = {
+        "ID": "",
+        "Preço Venda": None,
+        "Data Venda": None,
+        "Duração (Dias)": None,
+        "Resultado %": None,
+        "Resultado R$": None,
+        "Status": "Aberta"
+    }
+
+    for coluna, valor_padrao in colunas_necessarias.items():
+
+        if coluna not in df.columns:
+            df[coluna] = valor_padrao
+
+    return df
+
+
 def carregar_dados():
 
     if os.path.exists(DB_FILE):
@@ -29,56 +49,51 @@ def carregar_dados():
 
             df = pd.read_csv(DB_FILE)
 
-            if not df.empty:
+            # =================================================
+            # GARANTIR COLUNAS MESMO EM CSV ANTIGO
+            # =================================================
 
-                # =================================================
-                # GARANTIR COLUNAS NECESSÁRIAS
-                # =================================================
+            df = garantir_colunas(df)
 
-                colunas_necessarias = {
-                    "ID": "",
-                    "Preço Venda": None,
-                    "Data Venda": None,
-                    "Duração (Dias)": None,
-                    "Resultado %": None,
-                    "Resultado R$": None,
-                    "Status": "Aberta"
-                }
+            # =================================================
+            # AJUSTES DE DATA
+            # =================================================
 
-                for coluna, valor_padrao in colunas_necessarias.items():
-
-                    if coluna not in df.columns:
-                        df[coluna] = valor_padrao
-
-                # =================================================
-                # AJUSTES DE DATA
-                # =================================================
+            if "Data Compra" in df.columns:
 
                 df["Data Compra"] = pd.to_datetime(
                     df["Data Compra"],
                     errors="coerce"
                 ).dt.date
 
+            if "Data Venda" in df.columns:
+
                 df["Data Venda"] = pd.to_datetime(
                     df["Data Venda"],
                     errors="coerce"
                 ).dt.date
 
-                # =================================================
-                # GARANTIR IDs
-                # =================================================
+            # =================================================
+            # GARANTIR IDs
+            # =================================================
 
-                ids_vazios = (
-                    df["ID"].isna() |
-                    (df["ID"] == "")
-                )
+            ids_vazios = (
+                df["ID"].isna() |
+                (df["ID"] == "")
+            )
 
-                df.loc[ids_vazios, "ID"] = [
+            quantidade_ids = ids_vazios.sum()
+
+            if quantidade_ids > 0:
+
+                novos_ids = [
                     str(uuid.uuid4())[:8]
-                    for _ in range(ids_vazios.sum())
+                    for _ in range(quantidade_ids)
                 ]
 
-                return df
+                df.loc[ids_vazios, "ID"] = novos_ids
+
+            return df
 
         except Exception as e:
 
@@ -91,12 +106,12 @@ def carregar_dados():
     dados_iniciais = [
         {
             "ID": str(uuid.uuid4())[:8],
-            "Data Compra": datetime(2026, 5, 11).date(),
-            "Ticker": "NVDC34",
-            "Qtd": 5,
-            "Preço Compra": 22.07,
-            "Alvo (3%)": 22.73,
-            "Estratégia": "SAZONALIDADE/bdrsetfspullback",
+            "Data Compra": datetime.now().date(),
+            "Ticker": "PETR4",
+            "Qtd": 100,
+            "Preço Compra": 30.00,
+            "Alvo (3%)": 30.90,
+            "Estratégia": "SAZONALIDADE",
             "Preço Venda": None,
             "Data Venda": None,
             "Duração (Dias)": None,
@@ -106,20 +121,14 @@ def carregar_dados():
         }
     ]
 
-    return pd.DataFrame(dados_iniciais)
+    df = pd.DataFrame(dados_iniciais)
+
+    return df
 
 
 def salvar_dados(df):
 
     try:
-
-        backup_nome = (
-            f"backup_operacoes_"
-            f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-        )
-
-        if os.path.exists(DB_FILE):
-            df.to_csv(backup_nome, index=False)
 
         df.to_csv(DB_FILE, index=False)
 
@@ -129,6 +138,9 @@ def salvar_dados(df):
 
 
 def calcular_dias_aberto(data_compra):
+
+    if pd.isnull(data_compra):
+        return 0
 
     return (date.today() - data_compra).days
 
@@ -152,6 +164,14 @@ def classificar_tempo(dias):
 if "operacoes" not in st.session_state:
 
     st.session_state.operacoes = carregar_dados()
+
+# =========================================================
+# GARANTIR COLUNAS NO SESSION STATE
+# =========================================================
+
+st.session_state.operacoes = garantir_colunas(
+    st.session_state.operacoes
+)
 
 df = st.session_state.operacoes
 
@@ -323,58 +343,39 @@ with st.expander(
 
         if ticker and estrategia_final:
 
-            duplicada = (
-                (df["Ticker"] == ticker) &
-                (df["Status"] == "Aberta")
-            ).any()
+            nova_op = {
+                "ID": str(uuid.uuid4())[:8],
+                "Data Compra": data_compra,
+                "Ticker": ticker,
+                "Qtd": qtd,
+                "Preço Compra": preco_compra,
+                "Alvo (3%)": alvo,
+                "Estratégia": estrategia_final,
+                "Preço Venda": None,
+                "Data Venda": None,
+                "Duração (Dias)": None,
+                "Resultado %": None,
+                "Resultado R$": None,
+                "Status": "Aberta"
+            }
 
-            if duplicada:
-
-                st.warning(
-                    "Já existe uma operação aberta para este ticker."
-                )
-
-            else:
-
-                nova_op = {
-                    "ID": str(uuid.uuid4())[:8],
-                    "Data Compra": data_compra,
-                    "Ticker": ticker,
-                    "Qtd": qtd,
-                    "Preço Compra": preco_compra,
-                    "Alvo (3%)": alvo,
-                    "Estratégia": estrategia_final,
-                    "Preço Venda": None,
-                    "Data Venda": None,
-                    "Duração (Dias)": None,
-                    "Resultado %": None,
-                    "Resultado R$": None,
-                    "Status": "Aberta"
-                }
-
-                st.session_state.operacoes = pd.concat(
-                    [
-                        st.session_state.operacoes,
-                        pd.DataFrame([nova_op])
-                    ],
-                    ignore_index=True
-                )
-
-                salvar_dados(
-                    st.session_state.operacoes
-                )
-
-                st.success(
-                    f"Operação com {ticker} registrada!"
-                )
-
-                st.rerun()
-
-        else:
-
-            st.warning(
-                "Preencha ticker e estratégia."
+            st.session_state.operacoes = pd.concat(
+                [
+                    st.session_state.operacoes,
+                    pd.DataFrame([nova_op])
+                ],
+                ignore_index=True
             )
+
+            salvar_dados(
+                st.session_state.operacoes
+            )
+
+            st.success(
+                f"Operação com {ticker} registrada!"
+            )
+
+            st.rerun()
 
 # =========================================================
 # TABELA PRINCIPAL
@@ -417,8 +418,11 @@ if not df.empty:
     tabela["Status Tempo"] = status_tempo_lista
 
     # =====================================================
-    # FORMATAÇÃO VISUAL
+    # GARANTIR COLUNA RESULTADO R$
     # =====================================================
+
+    if "Resultado R$" not in tabela.columns:
+        tabela["Resultado R$"] = None
 
     tabela_exibir = tabela.copy()
 
@@ -648,125 +652,10 @@ with st.expander(
             f"({pior_trade['Resultado %']:.2f}%)"
         )
 
-        st.divider()
-
-        st.subheader(
-            "🔄 Ranking de Ciclos por Ticker"
-        )
-
-        ranking = (
-            ops_encerradas
-            .groupby("Ticker")
-            .agg({
-                "Ticker": "count",
-                "Duração (Dias)": "mean",
-                "Resultado %": "mean"
-            })
-            .rename(columns={
-                "Ticker": "Ciclos",
-                "Duração (Dias)": "Média Dias",
-                "Resultado %": "Retorno Médio %"
-            })
-            .sort_values(
-                by="Média Dias",
-                ascending=True
-            )
-        )
-
-        ranking["Média Dias"] = ranking[
-            "Média Dias"
-        ].round(1)
-
-        ranking["Retorno Médio %"] = ranking[
-            "Retorno Médio %"
-        ].round(2)
-
-        st.dataframe(
-            ranking,
-            use_container_width=True
-        )
-
     else:
 
         st.info(
             "Ainda não existem operações encerradas."
-        )
-
-# =========================================================
-# RECOMPRA RÁPIDA
-# =========================================================
-
-with st.expander(
-    "🔁 Recompra Rápida",
-    expanded=False
-):
-
-    if not ops_encerradas.empty:
-
-        ultimas_encerradas = ops_encerradas.sort_values(
-            by="Data Venda",
-            ascending=False
-        )
-
-        opcoes_recompra = {
-            idx: (
-                f"{row['Ticker']} "
-                f"(Última venda: {row['Data Venda']})"
-            )
-            for idx, row in ultimas_encerradas.iterrows()
-        }
-
-        idx_recompra = st.selectbox(
-            "Escolha uma operação encerrada",
-            options=list(opcoes_recompra.keys()),
-            format_func=lambda x: opcoes_recompra[x]
-        )
-
-        if st.button("Criar Nova Operação Igual"):
-
-            row = ultimas_encerradas.loc[idx_recompra]
-
-            preco_compra = row["Preço Venda"]
-
-            nova_op = {
-                "ID": str(uuid.uuid4())[:8],
-                "Data Compra": datetime.now().date(),
-                "Ticker": row["Ticker"],
-                "Qtd": row["Qtd"],
-                "Preço Compra": preco_compra,
-                "Alvo (3%)": round(preco_compra * 1.03, 2),
-                "Estratégia": row["Estratégia"],
-                "Preço Venda": None,
-                "Data Venda": None,
-                "Duração (Dias)": None,
-                "Resultado %": None,
-                "Resultado R$": None,
-                "Status": "Aberta"
-            }
-
-            st.session_state.operacoes = pd.concat(
-                [
-                    st.session_state.operacoes,
-                    pd.DataFrame([nova_op])
-                ],
-                ignore_index=True
-            )
-
-            salvar_dados(
-                st.session_state.operacoes
-            )
-
-            st.success(
-                f"Nova recompra criada para "
-                f"{row['Ticker']}!"
-            )
-
-            st.rerun()
-
-    else:
-
-        st.info(
-            "Nenhuma operação encerrada disponível."
         )
 
 # =========================================================
@@ -787,12 +676,6 @@ st.sidebar.download_button(
 )
 
 st.sidebar.info(
-    "Modelo operacional:\n\n"
-    "• Gain alvo: 3%\n"
-    "• Sem stop loss\n"
-    "• Foco em ativos carregáveis\n"
-    "• Controle por ciclos"
-)
     "Modelo operacional:\n\n"
     "• Gain alvo: 3%\n"
     "• Sem stop loss\n"
