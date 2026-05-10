@@ -19,6 +19,34 @@ st.title("📊 Gerenciador de Operações - Buy Side")
 DB_FILE = "operacoes.csv"
 
 # =========================================================
+# BACKUP AUTOMÁTICO
+# =========================================================
+
+def criar_backup():
+
+    if os.path.exists(DB_FILE):
+
+        pasta_backup = "backups"
+
+        if not os.path.exists(pasta_backup):
+            os.makedirs(pasta_backup)
+
+        nome_backup = (
+            f"backup_"
+            f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        )
+
+        caminho_backup = os.path.join(
+            pasta_backup,
+            nome_backup
+        )
+
+        try:
+            shutil.copy(DB_FILE, caminho_backup)
+        except:
+            pass
+
+# =========================================================
 # FUNÇÕES
 # =========================================================
 
@@ -52,6 +80,10 @@ def carregar_dados():
 
             df = garantir_colunas(df)
 
+            # =================================================
+            # AJUSTES DE DATA
+            # =================================================
+
             if "Data Compra" in df.columns:
 
                 df["Data Compra"] = pd.to_datetime(
@@ -65,6 +97,10 @@ def carregar_dados():
                     df["Data Venda"],
                     errors="coerce"
                 ).dt.date
+
+            # =================================================
+            # GARANTIR IDs
+            # =================================================
 
             ids_vazios = (
                 df["ID"].isna() |
@@ -253,46 +289,21 @@ def carregar_dados():
             "Resultado R$": None,
             "Status": "Aberta"
         }
+
     ]
 
-    return pd.DataFrame(dados_iniciais)
+    df = pd.DataFrame(dados_iniciais)
+
+    return df
 
 
 def salvar_dados(df):
 
     try:
 
-        # =================================================
-        # BACKUP AUTOMÁTICO
-        # =================================================
+        criar_backup()
 
-        if os.path.exists(DB_FILE):
-
-            backup_dir = "backups"
-
-            os.makedirs(
-                backup_dir,
-                exist_ok=True
-            )
-
-            timestamp = datetime.now().strftime(
-                "%Y%m%d_%H%M%S"
-            )
-
-            backup_file = os.path.join(
-                backup_dir,
-                f"operacoes_backup_{timestamp}.csv"
-            )
-
-            shutil.copy(
-                DB_FILE,
-                backup_file
-            )
-
-        df.to_csv(
-            DB_FILE,
-            index=False
-        )
+        df.to_csv(DB_FILE, index=False)
 
     except Exception as e:
 
@@ -309,10 +320,10 @@ def calcular_dias_aberto(data_compra):
 
 def classificar_tempo(dias):
 
-    if dias <= 30:
+    if dias <= 15:
         return "🟢 Saudável"
 
-    elif dias <= 60:
+    elif dias <= 45:
         return "🟡 Atenção"
 
     else:
@@ -326,6 +337,10 @@ def classificar_tempo(dias):
 if "operacoes" not in st.session_state:
 
     st.session_state.operacoes = carregar_dados()
+
+# =========================================================
+# GARANTIR COLUNAS
+# =========================================================
 
 st.session_state.operacoes = garantir_colunas(
     st.session_state.operacoes
@@ -346,8 +361,8 @@ capital_alocado = 0
 if not ops_abertas.empty:
 
     capital_alocado = (
-        ops_abertas["Qtd"] *
-        ops_abertas["Preço Compra"]
+        ops_abertas["Qtd"].fillna(0) *
+        ops_abertas["Preço Compra"].fillna(0)
     ).sum()
 
 ciclos_concluidos = len(ops_encerradas)
@@ -419,11 +434,10 @@ with col5:
     )
 
 # =========================================================
-# ALERTAS
+# ALERTA CAPITAL PARADO
 # =========================================================
 
-ops_atencao = []
-ops_criticas = []
+ops_lentas = []
 
 for idx, row in ops_abertas.iterrows():
 
@@ -431,30 +445,17 @@ for idx, row in ops_abertas.iterrows():
         row["Data Compra"]
     )
 
-    if dias > 60:
+    if dias > 45:
 
-        ops_criticas.append(
+        ops_lentas.append(
             row["Ticker"]
         )
 
-    elif dias > 30:
-
-        ops_atencao.append(
-            row["Ticker"]
-        )
-
-if len(ops_atencao) > 0:
+if len(ops_lentas) > 0:
 
     st.warning(
-        "🟡 Operações acima de 30 dias: "
-        + ", ".join(ops_atencao)
-    )
-
-if len(ops_criticas) > 0:
-
-    st.error(
-        "🔴 Operações acima de 60 dias: "
-        + ", ".join(ops_criticas)
+        f"⚠️ {len(ops_lentas)} operação(ões) acima de 45 dias: "
+        + ", ".join(ops_lentas)
     )
 
 # =========================================================
@@ -539,7 +540,7 @@ with st.expander(
                 "Alvo (3%)": alvo,
                 "Estratégia": estrategia_final,
                 "Preço Venda": None,
-                "Data Venda": None,
+                "Data Venda": pd.NaT,
                 "Duração (Dias)": None,
                 "Resultado %": None,
                 "Resultado R$": None,
@@ -694,15 +695,19 @@ if not ops_abertas.empty:
 
             idx = id_op
 
-            preco_compra = st.session_state.operacoes.at[
-                idx,
-                "Preço Compra"
-            ]
+            preco_compra = float(
+                st.session_state.operacoes.at[
+                    idx,
+                    "Preço Compra"
+                ]
+            )
 
-            qtd = st.session_state.operacoes.at[
-                idx,
-                "Qtd"
-            ]
+            qtd = float(
+                st.session_state.operacoes.at[
+                    idx,
+                    "Qtd"
+                ]
+            )
 
             dt_compra = st.session_state.operacoes.at[
                 idx,
@@ -730,22 +735,22 @@ if not ops_abertas.empty:
                 preco_venda - preco_compra
             ) * qtd
 
-            st.session_state.operacoes.at[
+            st.session_state.operacoes.loc[
                 idx,
                 "Preço Venda"
-            ] = preco_venda
+            ] = float(preco_venda)
 
-            st.session_state.operacoes.at[
+            st.session_state.operacoes.loc[
                 idx,
                 "Data Venda"
-            ] = data_venda
+            ] = pd.Timestamp(data_venda)
 
-            st.session_state.operacoes.at[
+            st.session_state.operacoes.loc[
                 idx,
                 "Duração (Dias)"
-            ] = duracao
+            ] = int(duracao)
 
-            st.session_state.operacoes.at[
+            st.session_state.operacoes.loc[
                 idx,
                 "Resultado %"
             ] = round(
@@ -753,7 +758,7 @@ if not ops_abertas.empty:
                 2
             )
 
-            st.session_state.operacoes.at[
+            st.session_state.operacoes.loc[
                 idx,
                 "Resultado R$"
             ] = round(
@@ -761,7 +766,7 @@ if not ops_abertas.empty:
                 2
             )
 
-            st.session_state.operacoes.at[
+            st.session_state.operacoes.loc[
                 idx,
                 "Status"
             ] = "Encerrada"
@@ -835,42 +840,28 @@ with st.expander(
             f"({pior_trade['Resultado %']:.2f}%)"
         )
 
-        # =================================================
-        # RANKING POR TICKER
-        # =================================================
-
         st.divider()
 
-        st.subheader(
-            "🏆 Ranking de Eficiência"
-        )
+        st.subheader("🏅 Ranking por Ticker")
 
         ranking = (
             ops_encerradas
             .groupby("Ticker")
             .agg({
-                "Ticker": "count",
-                "Duração (Dias)": "mean",
-                "Resultado R$": "sum"
+                "Resultado R$": "sum",
+                "Resultado %": "mean",
+                "Duração (Dias)": "mean"
             })
             .rename(columns={
-                "Ticker": "Ciclos",
-                "Duração (Dias)": "Média Dias",
-                "Resultado R$": "Lucro Total"
+                "Resultado R$": "Lucro Total R$",
+                "Resultado %": "Retorno Médio %",
+                "Duração (Dias)": "Média Dias"
             })
             .sort_values(
-                by="Média Dias",
-                ascending=True
+                by="Lucro Total R$",
+                ascending=False
             )
         )
-
-        ranking["Média Dias"] = ranking[
-            "Média Dias"
-        ].round(1)
-
-        ranking["Lucro Total"] = ranking[
-            "Lucro Total"
-        ].round(2)
 
         st.dataframe(
             ranking,
