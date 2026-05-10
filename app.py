@@ -43,6 +43,10 @@ def garantir_colunas(df):
 
 def carregar_dados():
 
+    # =====================================================
+    # TENTA CARREGAR CSV REAL
+    # =====================================================
+
     if os.path.exists(DB_FILE):
 
         try:
@@ -50,7 +54,17 @@ def carregar_dados():
             df = pd.read_csv(DB_FILE)
 
             # =================================================
-            # GARANTIR COLUNAS MESMO EM CSV ANTIGO
+            # EVITA USAR CSV VAZIO/CORROMPIDO
+            # =================================================
+
+            if df.empty:
+                st.warning(
+                    "⚠️ O arquivo operacoes.csv está vazio."
+                )
+                return pd.DataFrame()
+
+            # =================================================
+            # GARANTIR COLUNAS
             # =================================================
 
             df = garantir_colunas(df)
@@ -97,33 +111,21 @@ def carregar_dados():
 
         except Exception as e:
 
-            st.error(f"Erro ao carregar arquivo: {e}")
+            st.error(
+                f"Erro ao carregar operacoes.csv: {e}"
+            )
+
+            return pd.DataFrame()
 
     # =====================================================
-    # DADOS INICIAIS
+    # SE NÃO EXISTIR CSV, NÃO INVENTA DADOS
     # =====================================================
 
-    dados_iniciais = [
-        {
-            "ID": str(uuid.uuid4())[:8],
-            "Data Compra": datetime.now().date(),
-            "Ticker": "PETR4",
-            "Qtd": 100,
-            "Preço Compra": 30.00,
-            "Alvo (3%)": 30.90,
-            "Estratégia": "SAZONALIDADE",
-            "Preço Venda": None,
-            "Data Venda": None,
-            "Duração (Dias)": None,
-            "Resultado %": None,
-            "Resultado R$": None,
-            "Status": "Aberta"
-        }
-    ]
+    st.warning(
+        "⚠️ Arquivo operacoes.csv não encontrado."
+    )
 
-    df = pd.DataFrame(dados_iniciais)
-
-    return df
+    return pd.DataFrame()
 
 
 def salvar_dados(df):
@@ -166,7 +168,7 @@ if "operacoes" not in st.session_state:
     st.session_state.operacoes = carregar_dados()
 
 # =========================================================
-# GARANTIR COLUNAS NO SESSION STATE
+# GARANTIR COLUNAS
 # =========================================================
 
 st.session_state.operacoes = garantir_colunas(
@@ -417,10 +419,6 @@ if not df.empty:
 
     tabela["Status Tempo"] = status_tempo_lista
 
-    # =====================================================
-    # GARANTIR COLUNA RESULTADO R$
-    # =====================================================
-
     if "Resultado R$" not in tabela.columns:
         tabela["Resultado R$"] = None
 
@@ -455,6 +453,12 @@ if not df.empty:
         hide_index=True
     )
 
+else:
+
+    st.info(
+        "Nenhuma operação encontrada no CSV."
+    )
+
 # =========================================================
 # ENCERRAMENTO
 # =========================================================
@@ -462,10 +466,6 @@ if not df.empty:
 st.divider()
 
 st.subheader("🏁 Registrar Venda")
-
-ops_abertas = st.session_state.operacoes[
-    st.session_state.operacoes["Status"] == "Aberta"
-]
 
 if not ops_abertas.empty:
 
