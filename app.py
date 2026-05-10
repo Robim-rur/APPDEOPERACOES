@@ -24,27 +24,64 @@ DB_FILE = "operacoes.csv"
 def carregar_dados():
 
     if os.path.exists(DB_FILE):
+
         try:
+
             df = pd.read_csv(DB_FILE)
 
             if not df.empty:
 
-                if "ID" not in df.columns:
-                    df["ID"] = [str(uuid.uuid4())[:8] for _ in range(len(df))]
+                # =================================================
+                # GARANTIR COLUNAS NECESSÁRIAS
+                # =================================================
+
+                colunas_necessarias = {
+                    "ID": "",
+                    "Preço Venda": None,
+                    "Data Venda": None,
+                    "Duração (Dias)": None,
+                    "Resultado %": None,
+                    "Resultado R$": None,
+                    "Status": "Aberta"
+                }
+
+                for coluna, valor_padrao in colunas_necessarias.items():
+
+                    if coluna not in df.columns:
+                        df[coluna] = valor_padrao
+
+                # =================================================
+                # AJUSTES DE DATA
+                # =================================================
 
                 df["Data Compra"] = pd.to_datetime(
-                    df["Data Compra"]
+                    df["Data Compra"],
+                    errors="coerce"
                 ).dt.date
 
-                if "Data Venda" in df.columns:
-                    df["Data Venda"] = pd.to_datetime(
-                        df["Data Venda"],
-                        errors="coerce"
-                    ).dt.date
+                df["Data Venda"] = pd.to_datetime(
+                    df["Data Venda"],
+                    errors="coerce"
+                ).dt.date
+
+                # =================================================
+                # GARANTIR IDs
+                # =================================================
+
+                ids_vazios = (
+                    df["ID"].isna() |
+                    (df["ID"] == "")
+                )
+
+                df.loc[ids_vazios, "ID"] = [
+                    str(uuid.uuid4())[:8]
+                    for _ in range(ids_vazios.sum())
+                ]
 
                 return df
 
         except Exception as e:
+
             st.error(f"Erro ao carregar arquivo: {e}")
 
     # =====================================================
@@ -66,21 +103,6 @@ def carregar_dados():
             "Resultado %": None,
             "Resultado R$": None,
             "Status": "Aberta"
-        },
-        {
-            "ID": str(uuid.uuid4())[:8],
-            "Data Compra": datetime(2026, 5, 11).date(),
-            "Ticker": "KNSC11",
-            "Qtd": 10,
-            "Preço Compra": 9.17,
-            "Alvo (3%)": 9.45,
-            "Estratégia": "SAZONALIDADE",
-            "Preço Venda": None,
-            "Data Venda": None,
-            "Duração (Dias)": None,
-            "Resultado %": None,
-            "Resultado R$": None,
-            "Status": "Aberta"
         }
     ]
 
@@ -88,8 +110,13 @@ def carregar_dados():
 
 
 def salvar_dados(df):
+
     try:
-        backup_nome = f"backup_operacoes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+
+        backup_nome = (
+            f"backup_operacoes_"
+            f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        )
 
         if os.path.exists(DB_FILE):
             df.to_csv(backup_nome, index=False)
@@ -97,10 +124,12 @@ def salvar_dados(df):
         df.to_csv(DB_FILE, index=False)
 
     except Exception as e:
+
         st.error(f"Erro ao salvar dados: {e}")
 
 
 def calcular_dias_aberto(data_compra):
+
     return (date.today() - data_compra).days
 
 
@@ -121,6 +150,7 @@ def classificar_tempo(dias):
 # =========================================================
 
 if "operacoes" not in st.session_state:
+
     st.session_state.operacoes = carregar_dados()
 
 df = st.session_state.operacoes
@@ -130,11 +160,13 @@ df = st.session_state.operacoes
 # =========================================================
 
 ops_abertas = df[df["Status"] == "Aberta"]
+
 ops_encerradas = df[df["Status"] == "Encerrada"]
 
 capital_alocado = 0
 
 if not ops_abertas.empty:
+
     capital_alocado = (
         ops_abertas["Qtd"] *
         ops_abertas["Preço Compra"]
@@ -146,10 +178,16 @@ tempo_medio = 0
 
 if not ops_encerradas.empty:
 
-    duracoes_validas = ops_encerradas["Duração (Dias)"].dropna()
+    duracoes_validas = ops_encerradas[
+        "Duração (Dias)"
+    ].dropna()
 
     if not duracoes_validas.empty:
-        tempo_medio = round(duracoes_validas.mean(), 1)
+
+        tempo_medio = round(
+            duracoes_validas.mean(),
+            1
+        )
 
 # =========================================================
 # RESUMO EXECUTIVO
@@ -160,24 +198,28 @@ st.subheader("📌 Resumo Executivo")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
+
     st.metric(
         "Operações Abertas",
         len(ops_abertas)
     )
 
 with col2:
+
     st.metric(
         "Capital Alocado",
         f"R$ {capital_alocado:,.2f}"
     )
 
 with col3:
+
     st.metric(
         "Tempo Médio até Venda",
         f"{tempo_medio} dias"
     )
 
 with col4:
+
     st.metric(
         "Ciclos Concluídos",
         ciclos_concluidos
@@ -191,12 +233,18 @@ ops_lentas = []
 
 for idx, row in ops_abertas.iterrows():
 
-    dias = calcular_dias_aberto(row["Data Compra"])
+    dias = calcular_dias_aberto(
+        row["Data Compra"]
+    )
 
     if dias > 45:
-        ops_lentas.append(row["Ticker"])
+
+        ops_lentas.append(
+            row["Ticker"]
+        )
 
 if len(ops_lentas) > 0:
+
     st.warning(
         f"⚠️ {len(ops_lentas)} operação(ões) acima de 45 dias: "
         + ", ".join(ops_lentas)
@@ -206,7 +254,10 @@ if len(ops_lentas) > 0:
 # FORMULÁRIO NOVA OPERAÇÃO
 # =========================================================
 
-with st.expander("➕ Registrar Nova Operação", expanded=False):
+with st.expander(
+    "➕ Registrar Nova Operação",
+    expanded=False
+):
 
     col1, col2, col3 = st.columns(3)
 
@@ -250,15 +301,23 @@ with st.expander("➕ Registrar Nova Operação", expanded=False):
         )
 
         if selecao == "Outra (Digitar...)":
+
             estrategia_final = st.text_input(
                 "Digite o nome da Estratégia/App"
             )
+
         else:
+
             estrategia_final = selecao
 
-        alvo = round(preco_compra * 1.03, 2)
+        alvo = round(
+            preco_compra * 1.03,
+            2
+        )
 
-        st.info(f"🎯 Alvo de Venda: R$ {alvo:.2f}")
+        st.info(
+            f"🎯 Alvo de Venda: R$ {alvo:.2f}"
+        )
 
     if st.button("Salvar Operação"):
 
@@ -270,6 +329,7 @@ with st.expander("➕ Registrar Nova Operação", expanded=False):
             ).any()
 
             if duplicada:
+
                 st.warning(
                     "Já existe uma operação aberta para este ticker."
                 )
@@ -300,7 +360,9 @@ with st.expander("➕ Registrar Nova Operação", expanded=False):
                     ignore_index=True
                 )
 
-                salvar_dados(st.session_state.operacoes)
+                salvar_dados(
+                    st.session_state.operacoes
+                )
 
                 st.success(
                     f"Operação com {ticker} registrada!"
@@ -309,6 +371,7 @@ with st.expander("➕ Registrar Nova Operação", expanded=False):
                 st.rerun()
 
         else:
+
             st.warning(
                 "Preencha ticker e estratégia."
             )
@@ -324,13 +387,16 @@ if not df.empty:
     tabela = df.copy()
 
     dias_aberto_lista = []
+
     status_tempo_lista = []
 
     for idx, row in tabela.iterrows():
 
         if row["Status"] == "Aberta":
 
-            dias = calcular_dias_aberto(row["Data Compra"])
+            dias = calcular_dias_aberto(
+                row["Data Compra"]
+            )
 
             dias_aberto_lista.append(dias)
 
@@ -347,10 +413,11 @@ if not df.empty:
             status_tempo_lista.append("—")
 
     tabela["Dias em Aberto"] = dias_aberto_lista
+
     tabela["Status Tempo"] = status_tempo_lista
 
     # =====================================================
-    # FORMATAÇÃO VISUAL DO RESULTADO R$
+    # FORMATAÇÃO VISUAL
     # =====================================================
 
     tabela_exibir = tabela.copy()
@@ -456,6 +523,7 @@ if not ops_abertas.empty:
             ]
 
             if isinstance(dt_compra, str):
+
                 dt_compra = datetime.strptime(
                     dt_compra,
                     "%Y-%m-%d"
@@ -466,8 +534,9 @@ if not ops_abertas.empty:
             ).days
 
             resultado_pct = (
-                (preco_venda - preco_compra)
-                / preco_compra
+                (
+                    preco_venda - preco_compra
+                ) / preco_compra
             ) * 100
 
             resultado_rs = (
@@ -492,12 +561,18 @@ if not ops_abertas.empty:
             st.session_state.operacoes.at[
                 idx,
                 "Resultado %"
-            ] = round(resultado_pct, 2)
+            ] = round(
+                resultado_pct,
+                2
+            )
 
             st.session_state.operacoes.at[
                 idx,
                 "Resultado R$"
-            ] = round(resultado_rs, 2)
+            ] = round(
+                resultado_rs,
+                2
+            )
 
             st.session_state.operacoes.at[
                 idx,
@@ -515,13 +590,19 @@ if not ops_abertas.empty:
             st.rerun()
 
 else:
-    st.info("Nenhuma operação aberta.")
+
+    st.info(
+        "Nenhuma operação aberta."
+    )
 
 # =========================================================
-# ABA ESTATÍSTICAS
+# ESTATÍSTICAS
 # =========================================================
 
-with st.expander("📈 Estatísticas", expanded=False):
+with st.expander(
+    "📈 Estatísticas",
+    expanded=False
+):
 
     if not ops_encerradas.empty:
 
@@ -534,11 +615,15 @@ with st.expander("📈 Estatísticas", expanded=False):
         ].mean()
 
         melhor_trade = ops_encerradas.loc[
-            ops_encerradas["Resultado %"].idxmax()
+            ops_encerradas[
+                "Resultado %"
+            ].idxmax()
         ]
 
         pior_trade = ops_encerradas.loc[
-            ops_encerradas["Resultado %"].idxmin()
+            ops_encerradas[
+                "Resultado %"
+            ].idxmin()
         ]
 
         st.write(
@@ -563,13 +648,11 @@ with st.expander("📈 Estatísticas", expanded=False):
             f"({pior_trade['Resultado %']:.2f}%)"
         )
 
-        # =============================================
-        # RANKING DE CICLOS
-        # =============================================
-
         st.divider()
 
-        st.subheader("🔄 Ranking de Ciclos por Ticker")
+        st.subheader(
+            "🔄 Ranking de Ciclos por Ticker"
+        )
 
         ranking = (
             ops_encerradas
@@ -604,6 +687,7 @@ with st.expander("📈 Estatísticas", expanded=False):
         )
 
     else:
+
         st.info(
             "Ainda não existem operações encerradas."
         )
@@ -612,7 +696,10 @@ with st.expander("📈 Estatísticas", expanded=False):
 # RECOMPRA RÁPIDA
 # =========================================================
 
-with st.expander("🔁 Recompra Rápida", expanded=False):
+with st.expander(
+    "🔁 Recompra Rápida",
+    expanded=False
+):
 
     if not ops_encerradas.empty:
 
@@ -677,6 +764,7 @@ with st.expander("🔁 Recompra Rápida", expanded=False):
             st.rerun()
 
     else:
+
         st.info(
             "Nenhuma operação encerrada disponível."
         )
@@ -699,6 +787,12 @@ st.sidebar.download_button(
 )
 
 st.sidebar.info(
+    "Modelo operacional:\n\n"
+    "• Gain alvo: 3%\n"
+    "• Sem stop loss\n"
+    "• Foco em ativos carregáveis\n"
+    "• Controle por ciclos"
+)
     "Modelo operacional:\n\n"
     "• Gain alvo: 3%\n"
     "• Sem stop loss\n"
