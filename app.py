@@ -49,15 +49,7 @@ def carregar_dados():
 
             df = pd.read_csv(DB_FILE)
 
-            # =================================================
-            # GARANTIR COLUNAS MESMO EM CSV ANTIGO
-            # =================================================
-
             df = garantir_colunas(df)
-
-            # =================================================
-            # AJUSTES DE DATA
-            # =================================================
 
             if "Data Compra" in df.columns:
 
@@ -72,10 +64,6 @@ def carregar_dados():
                     df["Data Venda"],
                     errors="coerce"
                 ).dt.date
-
-            # =================================================
-            # GARANTIR IDs
-            # =================================================
 
             ids_vazios = (
                 df["ID"].isna() |
@@ -99,10 +87,6 @@ def carregar_dados():
 
             st.error(f"Erro ao carregar arquivo: {e}")
 
-    # =====================================================
-    # DADOS INICIAIS
-    # =====================================================
-
     dados_iniciais = [
         {
             "ID": str(uuid.uuid4())[:8],
@@ -121,9 +105,7 @@ def carregar_dados():
         }
     ]
 
-    df = pd.DataFrame(dados_iniciais)
-
-    return df
+    return pd.DataFrame(dados_iniciais)
 
 
 def salvar_dados(df):
@@ -157,6 +139,21 @@ def classificar_tempo(dias):
         return "🔴 Capital Parado"
 
 
+def classificar_eficiencia(media_dias):
+
+    if media_dias <= 15:
+        return "🟢 Excelente"
+
+    elif media_dias <= 35:
+        return "🟡 Boa"
+
+    elif media_dias <= 60:
+        return "🟠 Média"
+
+    else:
+        return "🔴 Capital Travado"
+
+
 # =========================================================
 # SESSION STATE
 # =========================================================
@@ -164,10 +161,6 @@ def classificar_tempo(dias):
 if "operacoes" not in st.session_state:
 
     st.session_state.operacoes = carregar_dados()
-
-# =========================================================
-# GARANTIR COLUNAS NO SESSION STATE
-# =========================================================
 
 st.session_state.operacoes = garantir_colunas(
     st.session_state.operacoes
@@ -417,10 +410,6 @@ if not df.empty:
 
     tabela["Status Tempo"] = status_tempo_lista
 
-    # =====================================================
-    # GARANTIR COLUNA RESULTADO R$
-    # =====================================================
-
     if "Resultado R$" not in tabela.columns:
         tabela["Resultado R$"] = None
 
@@ -650,6 +639,49 @@ with st.expander(
             f"📉 Pior ciclo: "
             f"{pior_trade['Ticker']} "
             f"({pior_trade['Resultado %']:.2f}%)"
+        )
+
+        st.divider()
+
+        st.subheader(
+            "⭐ Ranking de Eficiência do Capital"
+        )
+
+        ranking = (
+            ops_encerradas
+            .groupby("Ticker")
+            .agg({
+                "Ticker": "count",
+                "Duração (Dias)": "mean",
+                "Resultado R$": "sum"
+            })
+            .rename(columns={
+                "Ticker": "Ciclos",
+                "Duração (Dias)": "Média Dias",
+                "Resultado R$": "Lucro Total R$"
+            })
+        )
+
+        ranking["Média Dias"] = ranking[
+            "Média Dias"
+        ].round(1)
+
+        ranking["Lucro Total R$"] = ranking[
+            "Lucro Total R$"
+        ].round(2)
+
+        ranking["Eficiência"] = ranking[
+            "Média Dias"
+        ].apply(classificar_eficiencia)
+
+        ranking = ranking.sort_values(
+            by="Média Dias",
+            ascending=True
+        )
+
+        st.dataframe(
+            ranking,
+            use_container_width=True
         )
 
     else:
