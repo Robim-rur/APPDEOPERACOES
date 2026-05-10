@@ -44,7 +44,7 @@ def garantir_colunas(df):
 def carregar_dados():
 
     # =====================================================
-    # TENTA CARREGAR CSV REAL
+    # TENTA CARREGAR CSV EXISTENTE
     # =====================================================
 
     if os.path.exists(DB_FILE):
@@ -53,79 +53,215 @@ def carregar_dados():
 
             df = pd.read_csv(DB_FILE)
 
-            # =================================================
-            # EVITA USAR CSV VAZIO/CORROMPIDO
-            # =================================================
+            if not df.empty:
 
-            if df.empty:
-                st.warning(
-                    "⚠️ O arquivo operacoes.csv está vazio."
+                df = garantir_colunas(df)
+
+                if "Data Compra" in df.columns:
+
+                    df["Data Compra"] = pd.to_datetime(
+                        df["Data Compra"],
+                        errors="coerce"
+                    ).dt.date
+
+                if "Data Venda" in df.columns:
+
+                    df["Data Venda"] = pd.to_datetime(
+                        df["Data Venda"],
+                        errors="coerce"
+                    ).dt.date
+
+                ids_vazios = (
+                    df["ID"].isna() |
+                    (df["ID"] == "")
                 )
-                return pd.DataFrame()
 
-            # =================================================
-            # GARANTIR COLUNAS
-            # =================================================
+                quantidade_ids = ids_vazios.sum()
 
-            df = garantir_colunas(df)
+                if quantidade_ids > 0:
 
-            # =================================================
-            # AJUSTES DE DATA
-            # =================================================
+                    novos_ids = [
+                        str(uuid.uuid4())[:8]
+                        for _ in range(quantidade_ids)
+                    ]
 
-            if "Data Compra" in df.columns:
+                    df.loc[ids_vazios, "ID"] = novos_ids
 
-                df["Data Compra"] = pd.to_datetime(
-                    df["Data Compra"],
-                    errors="coerce"
-                ).dt.date
-
-            if "Data Venda" in df.columns:
-
-                df["Data Venda"] = pd.to_datetime(
-                    df["Data Venda"],
-                    errors="coerce"
-                ).dt.date
-
-            # =================================================
-            # GARANTIR IDs
-            # =================================================
-
-            ids_vazios = (
-                df["ID"].isna() |
-                (df["ID"] == "")
-            )
-
-            quantidade_ids = ids_vazios.sum()
-
-            if quantidade_ids > 0:
-
-                novos_ids = [
-                    str(uuid.uuid4())[:8]
-                    for _ in range(quantidade_ids)
-                ]
-
-                df.loc[ids_vazios, "ID"] = novos_ids
-
-            return df
+                return df
 
         except Exception as e:
 
-            st.error(
-                f"Erro ao carregar operacoes.csv: {e}"
-            )
-
-            return pd.DataFrame()
+            st.error(f"Erro ao carregar CSV: {e}")
 
     # =====================================================
-    # SE NÃO EXISTIR CSV, NÃO INVENTA DADOS
+    # DADOS INICIAIS
     # =====================================================
 
-    st.warning(
-        "⚠️ Arquivo operacoes.csv não encontrado."
-    )
+    dados_iniciais = [
 
-    return pd.DataFrame()
+        {
+            "ID": str(uuid.uuid4())[:8],
+            "Data Compra": datetime(2026, 5, 11).date(),
+            "Ticker": "NVDC34",
+            "Qtd": 5,
+            "Preço Compra": 22.07,
+            "Alvo (3%)": 22.73,
+            "Estratégia": "SAZONALIDADE/bdrsetfspullback",
+            "Preço Venda": None,
+            "Data Venda": None,
+            "Duração (Dias)": None,
+            "Resultado %": None,
+            "Resultado R$": None,
+            "Status": "Aberta"
+        },
+
+        {
+            "ID": str(uuid.uuid4())[:8],
+            "Data Compra": datetime(2026, 5, 11).date(),
+            "Ticker": "KNSC11",
+            "Qtd": 10,
+            "Preço Compra": 9.17,
+            "Alvo (3%)": 9.45,
+            "Estratégia": "SAZONALIDADE",
+            "Preço Venda": None,
+            "Data Venda": None,
+            "Duração (Dias)": None,
+            "Resultado %": None,
+            "Resultado R$": None,
+            "Status": "Aberta"
+        },
+
+        {
+            "ID": str(uuid.uuid4())[:8],
+            "Data Compra": datetime(2026, 5, 11).date(),
+            "Ticker": "ITUB4",
+            "Qtd": 2,
+            "Preço Compra": 40.70,
+            "Alvo (3%)": 41.92,
+            "Estratégia": "auvppullback",
+            "Preço Venda": None,
+            "Data Venda": None,
+            "Duração (Dias)": None,
+            "Resultado %": None,
+            "Resultado R$": None,
+            "Status": "Aberta"
+        },
+
+        {
+            "ID": str(uuid.uuid4())[:8],
+            "Data Compra": datetime(2026, 5, 6).date(),
+            "Ticker": "CPFE3F",
+            "Qtd": 2,
+            "Preço Compra": 49.79,
+            "Alvo (3%)": 51.27,
+            "Estratégia": "auvppullback",
+            "Preço Venda": None,
+            "Data Venda": None,
+            "Duração (Dias)": None,
+            "Resultado %": None,
+            "Resultado R$": None,
+            "Status": "Aberta"
+        },
+
+        {
+            "ID": str(uuid.uuid4())[:8],
+            "Data Compra": datetime(2026, 5, 6).date(),
+            "Ticker": "ABEV3F",
+            "Qtd": 6,
+            "Preço Compra": 16.69,
+            "Alvo (3%)": 17.18,
+            "Estratégia": "auvppullback",
+            "Preço Venda": None,
+            "Data Venda": None,
+            "Duração (Dias)": None,
+            "Resultado %": None,
+            "Resultado R$": None,
+            "Status": "Aberta"
+        },
+
+        {
+            "ID": str(uuid.uuid4())[:8],
+            "Data Compra": datetime(2026, 5, 6).date(),
+            "Ticker": "AVGO34",
+            "Qtd": 1,
+            "Preço Compra": 30.60,
+            "Alvo (3%)": 31.52,
+            "Estratégia": "auvppullback",
+            "Preço Venda": None,
+            "Data Venda": None,
+            "Duração (Dias)": None,
+            "Resultado %": None,
+            "Resultado R$": None,
+            "Status": "Aberta"
+        },
+
+        {
+            "ID": str(uuid.uuid4())[:8],
+            "Data Compra": datetime(2026, 5, 6).date(),
+            "Ticker": "VIVT3F",
+            "Qtd": 2,
+            "Preço Compra": 39.77,
+            "Alvo (3%)": 40.95,
+            "Estratégia": "auvppullback",
+            "Preço Venda": None,
+            "Data Venda": None,
+            "Duração (Dias)": None,
+            "Resultado %": None,
+            "Resultado R$": None,
+            "Status": "Aberta"
+        },
+
+        {
+            "ID": str(uuid.uuid4())[:8],
+            "Data Compra": datetime(2026, 5, 6).date(),
+            "Ticker": "PETR4F",
+            "Qtd": 2,
+            "Preço Compra": 46.68,
+            "Alvo (3%)": 48.06,
+            "Estratégia": "auvppullback",
+            "Preço Venda": None,
+            "Data Venda": None,
+            "Duração (Dias)": None,
+            "Resultado %": None,
+            "Resultado R$": None,
+            "Status": "Aberta"
+        },
+
+        {
+            "ID": str(uuid.uuid4())[:8],
+            "Data Compra": datetime(2026, 5, 6).date(),
+            "Ticker": "SBSP3F",
+            "Qtd": 3,
+            "Preço Compra": 33.23,
+            "Alvo (3%)": 34.23,
+            "Estratégia": "auvppullback",
+            "Preço Venda": None,
+            "Data Venda": None,
+            "Duração (Dias)": None,
+            "Resultado %": None,
+            "Resultado R$": None,
+            "Status": "Aberta"
+        },
+
+        {
+            "ID": str(uuid.uuid4())[:8],
+            "Data Compra": datetime(2026, 5, 6).date(),
+            "Ticker": "TIM3F",
+            "Qtd": 4,
+            "Preço Compra": 26.35,
+            "Alvo (3%)": 27.13,
+            "Estratégia": "auvppullback",
+            "Preço Venda": None,
+            "Data Venda": None,
+            "Duração (Dias)": None,
+            "Resultado %": None,
+            "Resultado R$": None,
+            "Status": "Aberta"
+        }
+
+    ]
+
+    return pd.DataFrame(dados_iniciais)
 
 
 def salvar_dados(df):
@@ -166,10 +302,6 @@ def classificar_tempo(dias):
 if "operacoes" not in st.session_state:
 
     st.session_state.operacoes = carregar_dados()
-
-# =========================================================
-# GARANTIR COLUNAS
-# =========================================================
 
 st.session_state.operacoes = garantir_colunas(
     st.session_state.operacoes
@@ -220,28 +352,24 @@ st.subheader("📌 Resumo Executivo")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-
     st.metric(
         "Operações Abertas",
         len(ops_abertas)
     )
 
 with col2:
-
     st.metric(
         "Capital Alocado",
         f"R$ {capital_alocado:,.2f}"
     )
 
 with col3:
-
     st.metric(
         "Tempo Médio até Venda",
         f"{tempo_medio} dias"
     )
 
 with col4:
-
     st.metric(
         "Ciclos Concluídos",
         ciclos_concluidos
@@ -456,7 +584,7 @@ if not df.empty:
 else:
 
     st.info(
-        "Nenhuma operação encontrada no CSV."
+        "Nenhuma operação encontrada."
     )
 
 # =========================================================
