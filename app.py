@@ -80,10 +80,6 @@ def carregar_dados():
 
             df = garantir_colunas(df)
 
-            # =================================================
-            # AJUSTES DE DATA
-            # =================================================
-
             if "Data Compra" in df.columns:
 
                 df["Data Compra"] = pd.to_datetime(
@@ -97,10 +93,6 @@ def carregar_dados():
                     df["Data Venda"],
                     errors="coerce"
                 ).dt.date
-
-            # =================================================
-            # GARANTIR IDs
-            # =================================================
 
             ids_vazios = (
                 df["ID"].isna() |
@@ -124,177 +116,11 @@ def carregar_dados():
 
             st.error(f"Erro ao carregar arquivo: {e}")
 
-    # =====================================================
-    # DADOS INICIAIS
-    # =====================================================
-
-    dados_iniciais = [
-
-        {
-            "ID": str(uuid.uuid4())[:8],
-            "Data Compra": datetime(2026, 5, 11).date(),
-            "Ticker": "NVDC34",
-            "Qtd": 5,
-            "Preço Compra": 22.07,
-            "Alvo (3%)": 22.73,
-            "Estratégia": "SAZONALIDADE/bdrsetfspullback",
-            "Preço Venda": None,
-            "Data Venda": None,
-            "Duração (Dias)": None,
-            "Resultado %": None,
-            "Resultado R$": None,
-            "Status": "Aberta"
-        },
-
-        {
-            "ID": str(uuid.uuid4())[:8],
-            "Data Compra": datetime(2026, 5, 11).date(),
-            "Ticker": "KNSC11",
-            "Qtd": 10,
-            "Preço Compra": 9.17,
-            "Alvo (3%)": 9.45,
-            "Estratégia": "SAZONALIDADE",
-            "Preço Venda": None,
-            "Data Venda": None,
-            "Duração (Dias)": None,
-            "Resultado %": None,
-            "Resultado R$": None,
-            "Status": "Aberta"
-        },
-
-        {
-            "ID": str(uuid.uuid4())[:8],
-            "Data Compra": datetime(2026, 5, 11).date(),
-            "Ticker": "ITUB4",
-            "Qtd": 2,
-            "Preço Compra": 40.70,
-            "Alvo (3%)": 41.92,
-            "Estratégia": "auvppullback",
-            "Preço Venda": None,
-            "Data Venda": None,
-            "Duração (Dias)": None,
-            "Resultado %": None,
-            "Resultado R$": None,
-            "Status": "Aberta"
-        },
-
-        {
-            "ID": str(uuid.uuid4())[:8],
-            "Data Compra": datetime(2026, 5, 6).date(),
-            "Ticker": "CPFE3F",
-            "Qtd": 2,
-            "Preço Compra": 49.79,
-            "Alvo (3%)": 51.27,
-            "Estratégia": "auvppullback",
-            "Preço Venda": None,
-            "Data Venda": None,
-            "Duração (Dias)": None,
-            "Resultado %": None,
-            "Resultado R$": None,
-            "Status": "Aberta"
-        },
-
-        {
-            "ID": str(uuid.uuid4())[:8],
-            "Data Compra": datetime(2026, 5, 6).date(),
-            "Ticker": "ABEV3F",
-            "Qtd": 6,
-            "Preço Compra": 16.69,
-            "Alvo (3%)": 17.18,
-            "Estratégia": "auvppullback",
-            "Preço Venda": None,
-            "Data Venda": None,
-            "Duração (Dias)": None,
-            "Resultado %": None,
-            "Resultado R$": None,
-            "Status": "Aberta"
-        },
-
-        {
-            "ID": str(uuid.uuid4())[:8],
-            "Data Compra": datetime(2026, 5, 6).date(),
-            "Ticker": "AVGO34",
-            "Qtd": 1,
-            "Preço Compra": 30.60,
-            "Alvo (3%)": 31.52,
-            "Estratégia": "auvppullback",
-            "Preço Venda": None,
-            "Data Venda": None,
-            "Duração (Dias)": None,
-            "Resultado %": None,
-            "Resultado R$": None,
-            "Status": "Aberta"
-        },
-
-        {
-            "ID": str(uuid.uuid4())[:8],
-            "Data Compra": datetime(2026, 5, 6).date(),
-            "Ticker": "VIVT3F",
-            "Qtd": 2,
-            "Preço Compra": 39.77,
-            "Alvo (3%)": 40.95,
-            "Estratégia": "auvppullback",
-            "Preço Venda": None,
-            "Data Venda": None,
-            "Duração (Dias)": None,
-            "Resultado %": None,
-            "Resultado R$": None,
-            "Status": "Aberta"
-        },
-
-        {
-            "ID": str(uuid.uuid4())[:8],
-            "Data Compra": datetime(2026, 5, 6).date(),
-            "Ticker": "PETR4F",
-            "Qtd": 2,
-            "Preço Compra": 46.68,
-            "Alvo (3%)": 48.06,
-            "Estratégia": "auvppullback",
-            "Preço Venda": None,
-            "Data Venda": None,
-            "Duração (Dias)": None,
-            "Resultado %": None,
-            "Resultado R$": None,
-            "Status": "Aberta"
-        },
-
-        {
-            "ID": str(uuid.uuid4())[:8],
-            "Data Compra": datetime(2026, 5, 6).date(),
-            "Ticker": "SBSP3F",
-            "Qtd": 3,
-            "Preço Compra": 33.23,
-            "Alvo (3%)": 34.23,
-            "Estratégia": "auvppullback",
-            "Preço Venda": None,
-            "Data Venda": None,
-            "Duração (Dias)": None,
-            "Resultado %": None,
-            "Resultado R$": None,
-            "Status": "Aberta"
-        },
-
-        {
-            "ID": str(uuid.uuid4())[:8],
-            "Data Compra": datetime(2026, 5, 6).date(),
-            "Ticker": "TIM3F",
-            "Qtd": 4,
-            "Preço Compra": 26.35,
-            "Alvo (3%)": 27.13,
-            "Estratégia": "auvppullback",
-            "Preço Venda": None,
-            "Data Venda": None,
-            "Duração (Dias)": None,
-            "Resultado %": None,
-            "Resultado R$": None,
-            "Status": "Aberta"
-        }
-
-    ]
+    dados_iniciais = []
 
     df = pd.DataFrame(dados_iniciais)
 
-    return df
+    return garantir_colunas(df)
 
 
 def salvar_dados(df):
@@ -329,7 +155,6 @@ def classificar_tempo(dias):
     else:
         return "🔴 Capital Parado"
 
-
 # =========================================================
 # SESSION STATE
 # =========================================================
@@ -337,10 +162,6 @@ def classificar_tempo(dias):
 if "operacoes" not in st.session_state:
 
     st.session_state.operacoes = carregar_dados()
-
-# =========================================================
-# GARANTIR COLUNAS
-# =========================================================
 
 st.session_state.operacoes = garantir_colunas(
     st.session_state.operacoes
@@ -605,9 +426,6 @@ if not df.empty:
 
     tabela["Status Tempo"] = status_tempo_lista
 
-    if "Resultado R$" not in tabela.columns:
-        tabela["Resultado R$"] = None
-
     tabela_exibir = tabela.copy()
 
     tabela_exibir["Resultado R$"] = tabela_exibir[
@@ -621,8 +439,8 @@ if not df.empty:
     )
 
     colunas_exibir = [
-        "Data Compra",
         "Ticker",
+        "Data Compra",
         "Qtd",
         "Preço Compra",
         "Alvo (3%)",
@@ -640,77 +458,213 @@ if not df.empty:
     )
 
 # =========================================================
-# ENCERRAMENTO
+# GERENCIAR OPERAÇÕES
 # =========================================================
 
 st.divider()
 
-st.subheader("🏁 Registrar Venda")
+st.subheader("🛠️ Gerenciar Operações")
 
-ops_abertas = st.session_state.operacoes[
-    st.session_state.operacoes["Status"] == "Aberta"
-]
+df_ops = st.session_state.operacoes.copy()
 
-if not ops_abertas.empty:
+if not df_ops.empty:
 
-    col1, col2, col3, col4 = st.columns(4)
+    opcoes_operacoes = {
+        row["ID"]: (
+            f"{row['Ticker']} | "
+            f"{row['Data Compra']} | "
+            f"{row['Status']}"
+        )
+        for _, row in df_ops.iterrows()
+    }
+
+    operacao_id = st.selectbox(
+        "Selecione uma operação",
+        options=list(opcoes_operacoes.keys()),
+        format_func=lambda x: opcoes_operacoes[x]
+    )
+
+    linha = df_ops[df_ops["ID"] == operacao_id].iloc[0]
+
+    st.markdown("### ✏️ Editar Operação")
+
+    col1, col2, col3 = st.columns(3)
 
     with col1:
 
-        opcoes = {
-            idx: (
-                f"{row['Ticker']} "
-                f"(Compra: {row['Data Compra']})"
-            )
-            for idx, row in ops_abertas.iterrows()
-        }
-
-        id_op = st.selectbox(
-            "Selecione a operação",
-            options=list(opcoes.keys()),
-            format_func=lambda x: opcoes[x]
+        editar_data = st.date_input(
+            "Data Compra",
+            value=linha["Data Compra"],
+            key="editar_data"
         )
+
+        editar_ticker = st.text_input(
+            "Ticker",
+            value=linha["Ticker"],
+            key="editar_ticker"
+        ).upper()
 
     with col2:
 
-        data_venda = st.date_input(
-            "Data da Venda",
-            datetime.now().date()
+        editar_qtd = st.number_input(
+            "Quantidade",
+            min_value=1,
+            value=int(linha["Qtd"]),
+            key="editar_qtd"
+        )
+
+        editar_preco = st.number_input(
+            "Preço Compra",
+            min_value=0.01,
+            value=float(linha["Preço Compra"]),
+            format="%.2f",
+            key="editar_preco"
         )
 
     with col3:
 
-        preco_venda = st.number_input(
-            "Preço de Venda",
-            min_value=0.01,
-            format="%.2f"
+        editar_estrategia = st.text_input(
+            "Estratégia",
+            value=str(linha["Estratégia"]),
+            key="editar_estrategia"
         )
 
-    with col4:
+        novo_alvo = round(
+            editar_preco * 1.03,
+            2
+        )
 
-        st.write("")
-        st.write("")
+        st.info(
+            f"🎯 Novo alvo: R$ {novo_alvo:.2f}"
+        )
 
-        if st.button("Confirmar Venda"):
+    colb1, colb2, colb3 = st.columns(3)
 
-            idx = id_op
+    # =====================================================
+    # SALVAR EDIÇÃO
+    # =====================================================
+
+    with colb1:
+
+        if st.button("💾 Salvar Alterações"):
+
+            idx_real = st.session_state.operacoes[
+                st.session_state.operacoes["ID"] == operacao_id
+            ].index[0]
+
+            st.session_state.operacoes.loc[
+                idx_real,
+                "Data Compra"
+            ] = editar_data
+
+            st.session_state.operacoes.loc[
+                idx_real,
+                "Ticker"
+            ] = editar_ticker
+
+            st.session_state.operacoes.loc[
+                idx_real,
+                "Qtd"
+            ] = editar_qtd
+
+            st.session_state.operacoes.loc[
+                idx_real,
+                "Preço Compra"
+            ] = editar_preco
+
+            st.session_state.operacoes.loc[
+                idx_real,
+                "Alvo (3%)"
+            ] = novo_alvo
+
+            st.session_state.operacoes.loc[
+                idx_real,
+                "Estratégia"
+            ] = editar_estrategia
+
+            salvar_dados(
+                st.session_state.operacoes
+            )
+
+            st.success(
+                "Operação atualizada!"
+            )
+
+            st.rerun()
+
+    # =====================================================
+    # EXCLUIR
+    # =====================================================
+
+    with colb2:
+
+        if st.button("🗑️ Excluir Operação"):
+
+            st.session_state.operacoes = (
+                st.session_state.operacoes[
+                    st.session_state.operacoes["ID"] != operacao_id
+                ]
+            )
+
+            salvar_dados(
+                st.session_state.operacoes
+            )
+
+            st.success(
+                "Operação excluída!"
+            )
+
+            st.rerun()
+
+    # =====================================================
+    # REGISTRAR VENDA
+    # =====================================================
+
+    if linha["Status"] == "Aberta":
+
+        st.markdown("### 🏁 Registrar Venda")
+
+        colv1, colv2 = st.columns(2)
+
+        with colv1:
+
+            data_venda = st.date_input(
+                "Data Venda",
+                datetime.now().date(),
+                key="data_venda"
+            )
+
+        with colv2:
+
+            preco_venda = st.number_input(
+                "Preço Venda",
+                min_value=0.01,
+                format="%.2f",
+                key="preco_venda"
+            )
+
+        if st.button("✅ Confirmar Venda"):
+
+            idx_real = st.session_state.operacoes[
+                st.session_state.operacoes["ID"] == operacao_id
+            ].index[0]
 
             preco_compra = float(
-                st.session_state.operacoes.at[
-                    idx,
+                st.session_state.operacoes.loc[
+                    idx_real,
                     "Preço Compra"
                 ]
             )
 
             qtd = float(
-                st.session_state.operacoes.at[
-                    idx,
+                st.session_state.operacoes.loc[
+                    idx_real,
                     "Qtd"
                 ]
             )
 
-            dt_compra = st.session_state.operacoes.at[
-                idx,
+            dt_compra = st.session_state.operacoes.loc[
+                idx_real,
                 "Data Compra"
             ]
 
@@ -736,22 +690,22 @@ if not ops_abertas.empty:
             ) * qtd
 
             st.session_state.operacoes.loc[
-                idx,
+                idx_real,
                 "Preço Venda"
-            ] = float(preco_venda)
+            ] = preco_venda
 
             st.session_state.operacoes.loc[
-                idx,
+                idx_real,
                 "Data Venda"
             ] = pd.Timestamp(data_venda)
 
             st.session_state.operacoes.loc[
-                idx,
+                idx_real,
                 "Duração (Dias)"
-            ] = int(duracao)
+            ] = duracao
 
             st.session_state.operacoes.loc[
-                idx,
+                idx_real,
                 "Resultado %"
             ] = round(
                 resultado_pct,
@@ -759,7 +713,7 @@ if not ops_abertas.empty:
             )
 
             st.session_state.operacoes.loc[
-                idx,
+                idx_real,
                 "Resultado R$"
             ] = round(
                 resultado_rs,
@@ -767,7 +721,7 @@ if not ops_abertas.empty:
             )
 
             st.session_state.operacoes.loc[
-                idx,
+                idx_real,
                 "Status"
             ] = "Encerrada"
 
@@ -776,15 +730,21 @@ if not ops_abertas.empty:
             )
 
             st.success(
-                "Venda registrada com sucesso!"
+                "Venda registrada!"
             )
 
             st.rerun()
 
+    else:
+
+        st.success(
+            "Operação já encerrada."
+        )
+
 else:
 
     st.info(
-        "Nenhuma operação aberta."
+        "Nenhuma operação encontrada."
     )
 
 # =========================================================
@@ -795,6 +755,10 @@ with st.expander(
     "📈 Estatísticas",
     expanded=False
 ):
+
+    ops_encerradas = st.session_state.operacoes[
+        st.session_state.operacoes["Status"] == "Encerrada"
+    ]
 
     if not ops_encerradas.empty:
 
