@@ -16,7 +16,24 @@ st.set_page_config(
 
 st.title("📊 Gerenciador de Operações - Buy Side")
 
-DB_FILE = "operacoes.csv"
+# =========================================================
+# BANCO DE DADOS PERSISTENTE
+# =========================================================
+
+PASTA_DADOS = "database"
+
+if not os.path.exists(PASTA_DADOS):
+    os.makedirs(PASTA_DADOS)
+
+DB_FILE = os.path.join(
+    PASTA_DADOS,
+    "operacoes.csv"
+)
+
+TEMP_FILE = os.path.join(
+    PASTA_DADOS,
+    "operacoes_temp.csv"
+)
 
 # =========================================================
 # BACKUP AUTOMÁTICO
@@ -72,13 +89,35 @@ def garantir_colunas(df):
 
 def carregar_dados():
 
-    if os.path.exists(DB_FILE):
+    try:
 
-        try:
+        # ==========================================
+        # RECUPERAÇÃO AUTOMÁTICA
+        # ==========================================
+
+        if (
+            not os.path.exists(DB_FILE)
+            and os.path.exists(TEMP_FILE)
+        ):
+
+            os.replace(
+                TEMP_FILE,
+                DB_FILE
+            )
+
+        # ==========================================
+        # CARREGAMENTO
+        # ==========================================
+
+        if os.path.exists(DB_FILE):
 
             df = pd.read_csv(DB_FILE)
 
             df = garantir_colunas(df)
+
+            # ======================================
+            # DATAS
+            # ======================================
 
             if "Data Compra" in df.columns:
 
@@ -94,6 +133,10 @@ def carregar_dados():
                     errors="coerce"
                 ).dt.date
 
+            # ======================================
+            # IDs
+            # ======================================
+
             ids_vazios = (
                 df["ID"].isna() |
                 (df["ID"] == "")
@@ -108,19 +151,26 @@ def carregar_dados():
                     for _ in range(quantidade_ids)
                 ]
 
-                df.loc[ids_vazios, "ID"] = novos_ids
+                df.loc[
+                    ids_vazios,
+                    "ID"
+                ] = novos_ids
 
             return df
 
-        except Exception as e:
+    except Exception as e:
 
-            st.error(f"Erro ao carregar arquivo: {e}")
+        st.error(
+            f"Erro ao carregar arquivo: {e}"
+        )
 
-    dados_iniciais = []
+    # ==============================================
+    # DATAFRAME INICIAL
+    # ==============================================
 
-    df = pd.DataFrame(dados_iniciais)
-
-    return garantir_colunas(df)
+    return garantir_colunas(
+        pd.DataFrame()
+    )
 
 
 def salvar_dados(df):
@@ -129,11 +179,29 @@ def salvar_dados(df):
 
         criar_backup()
 
-        df.to_csv(DB_FILE, index=False)
+        # ==========================================
+        # SALVAMENTO TEMPORÁRIO
+        # ==========================================
+
+        df.to_csv(
+            TEMP_FILE,
+            index=False
+        )
+
+        # ==========================================
+        # SUBSTITUIÇÃO SEGURA
+        # ==========================================
+
+        os.replace(
+            TEMP_FILE,
+            DB_FILE
+        )
 
     except Exception as e:
 
-        st.error(f"Erro ao salvar dados: {e}")
+        st.error(
+            f"Erro ao salvar dados: {e}"
+        )
 
 
 def calcular_dias_aberto(data_compra):
