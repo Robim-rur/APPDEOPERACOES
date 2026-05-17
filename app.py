@@ -742,39 +742,46 @@ with colb1:
 
             st.rerun()
 
-    # =====================================================
-    # REGISTRAR VENDA
-    # =====================================================
+   # =====================================================
+# REGISTRAR VENDA
+# =====================================================
 
-   if linha["Status"] == "Aberta":
+if linha["Status"] == "Aberta":
 
     st.markdown("### 🏁 Registrar Venda")
 
     colv1, colv2 = st.columns(2)
 
     with colv1:
+
         data_venda = st.date_input(
             "Data Venda",
             datetime.now().date(),
-            key="data_venda"
+            key=f"data_venda_{operacao_id}"
         )
 
     with colv2:
+
         preco_venda = st.number_input(
             "Preço Venda",
             min_value=0.01,
             format="%.2f",
-            key="preco_venda"
+            key=f"preco_venda_{operacao_id}"
         )
 
-    if st.button("✅ Confirmar Venda"):
+    if st.button("✅ Confirmar Venda", key=f"confirmar_venda_{operacao_id}"):
 
         idx_real = st.session_state.operacoes[
             st.session_state.operacoes["ID"] == operacao_id
         ].index[0]
 
-        preco_compra = float(st.session_state.operacoes.loc[idx_real, "Preço Compra"])
-        qtd = float(st.session_state.operacoes.loc[idx_real, "Qtd"])
+        preco_compra = float(
+            st.session_state.operacoes.loc[idx_real, "Preço Compra"]
+        )
+
+        qtd = float(
+            st.session_state.operacoes.loc[idx_real, "Qtd"]
+        )
 
         dt_compra = st.session_state.operacoes.loc[idx_real, "Data Compra"]
 
@@ -784,6 +791,7 @@ with colb1:
         duracao = (data_venda - dt_compra).days
 
         resultado_pct = ((preco_venda - preco_compra) / preco_compra) * 100
+
         resultado_rs = (preco_venda - preco_compra) * qtd
 
         st.session_state.operacoes.loc[idx_real, "Preço Venda"] = preco_venda
@@ -796,6 +804,7 @@ with colb1:
         salvar_dados(st.session_state.operacoes)
 
         st.success("Venda registrada!")
+
         st.rerun()
 
 else:
