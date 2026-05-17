@@ -56,8 +56,6 @@ def conectar_planilha():
 
 def converter_numero(valor):
 
-   def converter_numero(valor):
-
     if valor is None:
         return None
 
