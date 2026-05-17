@@ -978,7 +978,89 @@ with st.expander(
         st.info(
             "Ainda não existem operações encerradas."
         )
+    operacao_id = st.selectbox(
+        "Selecione uma operação",
+        options=list(opcoes_operacoes.keys()),
+        format_func=lambda x: opcoes_operacoes[x]
+    )
 
+    linha = df_ops[df_ops["ID"] == operacao_id].iloc[0]
+
+    # =====================================================
+    # DETALHES DA OPERAÇÃO
+    # =====================================================
+
+    st.info(
+        f"""
+📌 Ticker: {linha['Ticker']}
+
+📅 Data Compra: {linha['Data Compra']}
+
+📦 Quantidade: {linha['Qtd']}
+
+💰 Preço Compra: R$ {float(linha['Preço Compra']):.2f}
+
+🎯 Alvo: R$ {float(linha['Alvo (3%)']):.2f}
+
+📊 Status: {linha['Status']}
+
+🧠 Estratégia: {linha['Estratégia']}
+"""
+    )
+
+    st.markdown("### ✏️ Editar Operação")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        editar_data = st.date_input(
+            "Data Compra",
+            value=linha["Data Compra"],
+            key="editar_data"
+        )
+
+        editar_ticker = st.text_input(
+            "Ticker",
+            value=linha["Ticker"],
+            key="editar_ticker"
+        ).upper()
+
+    with col2:
+
+        editar_qtd = st.number_input(
+            "Quantidade",
+            min_value=1,
+            value=int(linha["Qtd"]) if pd.notnull(linha["Qtd"]) else 1,
+            key="editar_qtd"
+        )
+
+        editar_preco = st.number_input(
+            "Preço Compra",
+            min_value=0.01,
+            value=float(linha["Preço Compra"]) if pd.notnull(linha["Preço Compra"]) else 0.01,
+            format="%.2f",
+            key="editar_preco"
+        )
+
+    with col3:
+
+        editar_estrategia = st.text_input(
+            "Estratégia",
+            value=str(linha["Estratégia"]),
+            key="editar_estrategia"
+        )
+
+        novo_alvo = round(
+            editar_preco * 1.03,
+            2
+        )
+
+        st.info(
+            f"🎯 Novo alvo: R$ {novo_alvo:.2f}"
+        )
+
+    colb1, colb2, colb3 = st.columns(3)
 # =========================================================
 # SIDEBAR
 # =========================================================
