@@ -631,7 +631,7 @@ df_ops = st.session_state.operacoes.copy()
 
 if not df_ops.empty:
 
-        opcoes_operacoes = {
+    opcoes_operacoes = {
         row["ID"]: (
             f"{row['Ticker']} | "
             f"{row['Data Compra']} | "
@@ -667,61 +667,12 @@ if not df_ops.empty:
 📊 Status: {linha['Status']}
 
 🧠 Estratégia: {linha['Estratégia']}
+"""
     )
 
     st.markdown("### ✏️ Editar Operação")
 
     col1, col2, col3 = st.columns(3)
-
-    with col1:
-
-        editar_data = st.date_input(
-            "Data Compra",
-            value=linha["Data Compra"],
-            key="editar_data"
-        )
-
-        editar_ticker = st.text_input(
-            "Ticker",
-            value=linha["Ticker"],
-            key="editar_ticker"
-        ).upper()
-
-    with col2:
-
-        editar_qtd = st.number_input(
-            "Quantidade",
-            min_value=1,
-            value=int(linha["Qtd"]) if pd.notnull(linha["Qtd"]) else 1,
-            key="editar_qtd"
-        )
-
-        editar_preco = st.number_input(
-            "Preço Compra",
-            min_value=0.01,
-            value=float(linha["Preço Compra"]) if pd.notnull(linha["Preço Compra"]) else 0.01,
-            format="%.2f",
-            key="editar_preco"
-        )
-
-    with col3:
-
-        editar_estrategia = st.text_input(
-            "Estratégia",
-            value=str(linha["Estratégia"]),
-            key="editar_estrategia"
-        )
-
-        novo_alvo = round(
-            editar_preco * 1.03,
-            2
-        )
-
-        st.info(
-            f"🎯 Novo alvo: R$ {novo_alvo:.2f}"
-        )
-
-    colb1, colb2, colb3 = st.columns(3)
 
     # =====================================================
     # SALVAR EDIÇÃO
