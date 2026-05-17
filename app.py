@@ -644,6 +644,7 @@ if not df_ops.empty:
         "Selecione uma operação",
         options=list(opcoes_operacoes.keys()),
         format_func=lambda x: opcoes_operacoes[x]
+        key="selecionar_operacao"
     )
 
     linha = df_ops[df_ops["ID"] == operacao_id].iloc[0]
