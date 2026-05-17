@@ -143,7 +143,9 @@ def carregar_dados():
 
         aba = conectar_planilha()
 
-               dados = aba.get_all_records(numericise_ignore=['all'])
+        dados = aba.get_all_records(
+            numericise_ignore=['all']
+        )
 
         if len(dados) == 0:
 
