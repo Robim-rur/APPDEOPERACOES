@@ -663,7 +663,13 @@ if not df_ops.empty:
 💰 Preço Compra: R$ {linha['Preço Compra']:.2f}
 
 🎯 Alvo: R$ {linha['Alvo (3%)']:.2f}
+     colb1, colb2, colb3 = st.columns(3)
 
+    # =====================================================
+    # SALVAR EDIÇÃO
+    # =====================================================
+
+    with colb1:
 📊 Status: {linha['Status']}
 
 🧠 Estratégia: {linha['Estratégia']}
