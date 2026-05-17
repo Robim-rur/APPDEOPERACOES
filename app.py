@@ -680,19 +680,19 @@ if not df_ops.empty:
 
     col1, col2, col3 = st.columns(3)
 
-    # =====================================================
+      # =====================================================
     # SALVAR EDIÇÃO
     # =====================================================
 
     colb1, colb2, colb3 = st.columns(3)
-        with colb1:
+
+    with colb1:
 
         if st.button("💾 Salvar Alterações"):
 
             idx_real = st.session_state.operacoes[
                 st.session_state.operacoes["ID"] == operacao_id
             ].index[0]
-
             st.session_state.operacoes.loc[
                 idx_real,
                 "Data Compra"
