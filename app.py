@@ -667,7 +667,6 @@ if not df_ops.empty:
 📊 Status: {linha['Status']}
 
 🧠 Estratégia: {linha['Estratégia']}
-"""
     )
 
     st.markdown("### ✏️ Editar Operação")
