@@ -646,9 +646,31 @@ if not df_ops.empty:
         format_func=lambda x: opcoes_operacoes[x]
     )
 
-    linha = df_ops[df_ops["ID"] == operacao_id].iloc[0]
+  linha = df_ops[df_ops["ID"] == operacao_id].iloc[0]
 
-    st.markdown("### ✏️ Editar Operação")
+# =====================================================
+# DETALHES DA OPERAÇÃO
+# =====================================================
+
+st.info(
+    f"""
+📌 Ticker: {linha['Ticker']}
+
+📅 Data Compra: {linha['Data Compra']}
+
+📦 Quantidade: {linha['Qtd']}
+
+💰 Preço Compra: R$ {linha['Preço Compra']:.2f}
+
+🎯 Alvo: R$ {linha['Alvo (3%)']:.2f}
+
+📊 Status: {linha['Status']}
+
+🧠 Estratégia: {linha['Estratégia']}
+"""
+)
+
+st.markdown("### ✏️ Editar Operação")
 
 # =====================================================
 # DETALHES DA OPERAÇÃO
