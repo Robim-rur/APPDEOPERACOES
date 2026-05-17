@@ -31,6 +31,10 @@ SHEET_ID = "1F96th5Cu0Px4eFWrPfwBIiBpohEtgGk-Gc0O199mnaM"
 
 ABA_NOME = "operacoes"
 
+# =========================================================
+# CONEXÃO
+# =========================================================
+
 @st.cache_resource
 def conectar_planilha():
 
@@ -48,13 +52,56 @@ def conectar_planilha():
     return aba
 
 # =========================================================
-# FUNÇÕES
+# FUNÇÕES NUMÉRICAS
+# =========================================================
+
+def converter_numero(valor):
+
+    if valor is None:
+        return None
+
+    if valor == "":
+        return None
+
+    try:
+
+        texto = str(valor).strip()
+
+        texto = texto.replace("R$", "")
+        texto = texto.replace("%", "")
+        texto = texto.replace(" ", "")
+
+        # Se tiver vírgula e ponto
+        if "," in texto and "." in texto:
+
+            # padrão brasileiro
+            texto = texto.replace(".", "")
+            texto = texto.replace(",", ".")
+
+        # Apenas vírgula
+        elif "," in texto:
+
+            texto = texto.replace(",", ".")
+
+        return float(texto)
+
+    except:
+        return None
+
+# =========================================================
+# GARANTIR COLUNAS
 # =========================================================
 
 def garantir_colunas(df):
 
     colunas_necessarias = {
         "ID": "",
+        "Data Compra": None,
+        "Ticker": "",
+        "Qtd": 0,
+        "Preço Compra": 0.0,
+        "Alvo (3%)": 0.0,
+        "Estratégia": "",
         "Preço Venda": None,
         "Data Venda": None,
         "Duração (Dias)": None,
@@ -69,6 +116,10 @@ def garantir_colunas(df):
             df[coluna] = valor_padrao
 
     return df
+
+# =========================================================
+# CARREGAR DADOS
+# =========================================================
 
 def carregar_dados():
 
@@ -92,6 +143,10 @@ def carregar_dados():
 
         df = garantir_colunas(df)
 
+        # =================================================
+        # DATAS
+        # =================================================
+
         if "Data Compra" in df.columns:
 
             df["Data Compra"] = pd.to_datetime(
@@ -105,6 +160,32 @@ def carregar_dados():
                 df["Data Venda"],
                 errors="coerce"
             ).dt.date
+
+        # =================================================
+        # NÚMEROS
+        # =================================================
+
+        colunas_numericas = [
+            "Qtd",
+            "Preço Compra",
+            "Alvo (3%)",
+            "Preço Venda",
+            "Duração (Dias)",
+            "Resultado %",
+            "Resultado R$"
+        ]
+
+        for coluna in colunas_numericas:
+
+            if coluna in df.columns:
+
+                df[coluna] = df[coluna].apply(
+                    converter_numero
+                )
+
+        # =================================================
+        # IDs
+        # =================================================
 
         ids_vazios = (
             df["ID"].isna() |
@@ -134,6 +215,10 @@ def carregar_dados():
 
     return garantir_colunas(df)
 
+# =========================================================
+# SALVAR DADOS
+# =========================================================
+
 def salvar_dados(df):
 
     try:
@@ -142,15 +227,46 @@ def salvar_dados(df):
 
         df_salvar = df.copy()
 
+        # =================================================
+        # DATAS
+        # =================================================
+
         for coluna in ["Data Compra", "Data Venda"]:
 
             if coluna in df_salvar.columns:
 
-                df_salvar[coluna] = df_salvar[coluna].astype(str)
+                df_salvar[coluna] = df_salvar[
+                    coluna
+                ].astype(str)
+
+        # =================================================
+        # NÚMEROS
+        # =================================================
+
+        colunas_numericas = [
+            "Qtd",
+            "Preço Compra",
+            "Alvo (3%)",
+            "Preço Venda",
+            "Duração (Dias)",
+            "Resultado %",
+            "Resultado R$"
+        ]
+
+        for coluna in colunas_numericas:
+
+            if coluna in df_salvar.columns:
+
+                df_salvar[coluna] = pd.to_numeric(
+                    df_salvar[coluna],
+                    errors="coerce"
+                )
 
         df_salvar = df_salvar.fillna("")
 
-        dados = [df_salvar.columns.tolist()] + df_salvar.values.tolist()
+        dados = [
+            df_salvar.columns.tolist()
+        ] + df_salvar.values.tolist()
 
         aba.clear()
 
@@ -159,6 +275,10 @@ def salvar_dados(df):
     except Exception as e:
 
         st.error(f"Erro ao salvar dados: {e}")
+
+# =========================================================
+# FUNÇÕES AUXILIARES
+# =========================================================
 
 def calcular_dias_aberto(data_compra):
 
@@ -205,15 +325,9 @@ capital_alocado = 0
 if not ops_abertas.empty:
 
     capital_alocado = (
-        pd.to_numeric(
-            ops_abertas["Qtd"],
-            errors="coerce"
-        ).fillna(0)
+        ops_abertas["Qtd"].fillna(0)
         *
-        pd.to_numeric(
-            ops_abertas["Preço Compra"],
-            errors="coerce"
-        ).fillna(0)
+        ops_abertas["Preço Compra"].fillna(0)
     ).sum()
 
 ciclos_concluidos = len(ops_encerradas)
@@ -222,12 +336,9 @@ tempo_medio = 0
 
 if not ops_encerradas.empty:
 
-    duracoes_validas = pd.to_numeric(
-        ops_encerradas[
-            "Duração (Dias)"
-        ],
-        errors="coerce"
-    ).dropna()
+    duracoes_validas = ops_encerradas[
+        "Duração (Dias)"
+    ].dropna()
 
     if not duracoes_validas.empty:
 
@@ -240,12 +351,9 @@ lucro_total = 0
 
 if not ops_encerradas.empty:
 
-    lucro_total = pd.to_numeric(
-        ops_encerradas[
-            "Resultado R$"
-        ],
-        errors="coerce"
-    ).fillna(0).sum()
+    lucro_total = ops_encerradas[
+        "Resultado R$"
+    ].fillna(0).sum()
 
 # =========================================================
 # RESUMO EXECUTIVO
@@ -468,8 +576,8 @@ if not df.empty:
         "Resultado R$"
     ].apply(
         lambda x: (
-            f"R$ {float(x):,.2f}"
-            if pd.notnull(x) and x != ""
+            f"R$ {x:,.2f}"
+            if pd.notnull(x)
             else "-"
         )
     )
@@ -545,7 +653,7 @@ if not df_ops.empty:
         editar_qtd = st.number_input(
             "Quantidade",
             min_value=1,
-            value=int(float(linha["Qtd"])),
+            value=int(linha["Qtd"]),
             key="editar_qtd"
         )
 
@@ -798,36 +906,24 @@ with st.expander(
 
     if not ops_encerradas.empty:
 
-        resultado_total = pd.to_numeric(
-            ops_encerradas[
-                "Resultado R$"
-            ],
-            errors="coerce"
-        ).fillna(0).sum()
+        resultado_total = ops_encerradas[
+            "Resultado R$"
+        ].fillna(0).sum()
 
-        retorno_medio = pd.to_numeric(
-            ops_encerradas[
-                "Resultado %"
-            ],
-            errors="coerce"
-        ).fillna(0).mean()
+        retorno_medio = ops_encerradas[
+            "Resultado %"
+        ].fillna(0).mean()
 
         melhor_trade = ops_encerradas.loc[
-            pd.to_numeric(
-                ops_encerradas[
-                    "Resultado %"
-                ],
-                errors="coerce"
-            ).idxmax()
+            ops_encerradas[
+                "Resultado %"
+            ].idxmax()
         ]
 
         pior_trade = ops_encerradas.loc[
-            pd.to_numeric(
-                ops_encerradas[
-                    "Resultado %"
-                ],
-                errors="coerce"
-            ).idxmin()
+            ops_encerradas[
+                "Resultado %"
+            ].idxmin()
         ]
 
         st.write(
@@ -843,13 +939,13 @@ with st.expander(
         st.write(
             f"🏆 Melhor ciclo: "
             f"{melhor_trade['Ticker']} "
-            f"({float(melhor_trade['Resultado %']):.2f}%)"
+            f"({melhor_trade['Resultado %']:.2f}%)"
         )
 
         st.write(
             f"📉 Pior ciclo: "
             f"{pior_trade['Ticker']} "
-            f"({float(pior_trade['Resultado %']):.2f}%)"
+            f"({pior_trade['Resultado %']:.2f}%)"
         )
 
         st.divider()
