@@ -49,7 +49,6 @@ def conectar_planilha():
 
     aba = planilha.worksheet(ABA_NOME)
 
-    return aba
 
 # =========================================================
 # FUNÇÕES NUMÉRICAS
@@ -674,14 +673,14 @@ if not df_ops.empty:
         editar_qtd = st.number_input(
             "Quantidade",
             min_value=1,
-            value=int(linha["Qtd"]),
+            value=int(linha["Qtd"]) if pd.notnull(linha["Qtd"]) else 1,
             key="editar_qtd"
         )
 
         editar_preco = st.number_input(
             "Preço Compra",
             min_value=0.01,
-            value=float(linha["Preço Compra"]),
+            value=float(linha["Preço Compra"]) if pd.notnull(linha["Preço Compra"]) else 0.01,
             format="%.2f",
             key="editar_preco"
         )
