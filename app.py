@@ -927,17 +927,31 @@ with st.expander(
             "Resultado %"
         ].fillna(0).mean()
 
-        melhor_trade = ops_encerradas.loc[
-            ops_encerradas[
-                "Resultado %"
-            ].idxmax()
-        ]
+       resultado_pct_validos = ops_encerradas.dropna(
+    subset=["Resultado %"]
+)
 
-        pior_trade = ops_encerradas.loc[
-            ops_encerradas[
-                "Resultado %"
-            ].idxmin()
-        ]
+if not resultado_pct_validos.empty:
+
+    melhor_trade = resultado_pct_validos.loc[
+        resultado_pct_validos["Resultado %"].idxmax()
+    ]
+
+    pior_trade = resultado_pct_validos.loc[
+        resultado_pct_validos["Resultado %"].idxmin()
+    ]
+
+    st.write(
+        f"🏆 Melhor ciclo: "
+        f"{melhor_trade['Ticker']} "
+        f"({melhor_trade['Resultado %']:.2f}%)"
+    )
+
+    st.write(
+        f"📉 Pior ciclo: "
+        f"{pior_trade['Ticker']} "
+        f"({pior_trade['Resultado %']:.2f}%)"
+    )
 
         st.write(
             f"💰 Resultado acumulado: "
