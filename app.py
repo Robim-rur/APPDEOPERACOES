@@ -54,7 +54,7 @@ def conectar_planilha():
 
 # =========================================================
 # FUNÇÕES NUMÉRICAS
-# =========================================================
+
 def converter_numero(valor):
 
     if valor is None:
@@ -82,10 +82,16 @@ def converter_numero(valor):
 
         if "," in texto and "." in texto:
 
+            # Brasileiro
             if texto.rfind(",") > texto.rfind("."):
 
                 texto = texto.replace(".", "")
                 texto = texto.replace(",", ".")
+
+            # Americano
+            else:
+
+                pass
 
         # =================================================
         # APENAS VÍRGULA
