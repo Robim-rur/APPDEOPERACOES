@@ -679,60 +679,44 @@ if not df_ops.empty:
 
     st.markdown("### ✏️ Editar Operação")
 
-    col1, col2, col3 = st.columns(3)
+colb1, colb2, colb3 = st.columns(3)
 
-      # =====================================================
-    # SALVAR EDIÇÃO
-    # =====================================================
+with colb1:
 
-    colb1, colb2, colb3 = st.columns(3)
+    if st.button("💾 Salvar Alterações"):
 
-    with colb1:
+        idx_real = st.session_state.operacoes[
+            st.session_state.operacoes["ID"] == operacao_id
+        ].index[0]
 
-        if st.button("💾 Salvar Alterações"):
+        st.session_state.operacoes.loc[
+            idx_real, "Data Compra"
+        ] = editar_data
 
-            idx_real = st.session_state.operacoes[
-                st.session_state.operacoes["ID"] == operacao_id
-            ].index[0]
-            st.session_state.operacoes.loc[
-                idx_real,
-                "Data Compra"
-            ] = editar_data
+        st.session_state.operacoes.loc[
+            idx_real, "Ticker"
+        ] = editar_ticker
 
-            st.session_state.operacoes.loc[
-                idx_real,
-                "Ticker"
-            ] = editar_ticker
+        st.session_state.operacoes.loc[
+            idx_real, "Qtd"
+        ] = editar_qtd
 
-            st.session_state.operacoes.loc[
-                idx_real,
-                "Qtd"
-            ] = editar_qtd
+        st.session_state.operacoes.loc[
+            idx_real, "Preço Compra"
+        ] = editar_preco
 
-            st.session_state.operacoes.loc[
-                idx_real,
-                "Preço Compra"
-            ] = editar_preco
+        st.session_state.operacoes.loc[
+            idx_real, "Alvo (3%)"
+        ] = novo_alvo
 
-            st.session_state.operacoes.loc[
-                idx_real,
-                "Alvo (3%)"
-            ] = novo_alvo
+        st.session_state.operacoes.loc[
+            idx_real, "Estratégia"
+        ] = editar_estrategia
 
-            st.session_state.operacoes.loc[
-                idx_real,
-                "Estratégia"
-            ] = editar_estrategia
+        salvar_dados(st.session_state.operacoes)
 
-            salvar_dados(
-                st.session_state.operacoes
-            )
-
-            st.success(
-                "Operação atualizada!"
-            )
-
-            st.rerun()
+        st.success("Operação atualizada!")
+        st.rerun()
 
     # =====================================================
     # EXCLUIR
