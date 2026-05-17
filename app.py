@@ -355,15 +355,20 @@ tempo_medio = 0
 if not ops_encerradas.empty:
 
     duracoes_validas = ops_encerradas[
-        "Duração (Dias)"
-    ].dropna()
+    "Duração (Dias)"
+].dropna()
 
-    if not duracoes_validas.empty:
+# segurança: evita distorção por operações de 0 dia
+duracoes_validas = duracoes_validas.apply(lambda x: max(x, 1))
 
-        tempo_medio = round(
-            duracoes_validas.mean(),
-            1
-        )
+if not duracoes_validas.empty:
+
+    tempo_medio = round(
+        duracoes_validas.mean(),
+        1
+    )
+else:
+    tempo_medio = 0
 
 lucro_total = 0
 
