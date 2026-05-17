@@ -684,7 +684,8 @@ if not df_ops.empty:
     # SALVAR EDIÇÃO
     # =====================================================
 
-    with colb1:
+    colb1, colb2, colb3 = st.columns(3)
+        with colb1:
 
         if st.button("💾 Salvar Alterações"):
 
