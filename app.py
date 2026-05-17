@@ -746,7 +746,7 @@ with colb1:
     # REGISTRAR VENDA
     # =====================================================
 
-    if linha["Status"] == "Aberta":
+   if linha["Status"] == "Aberta":
 
     st.markdown("### 🏁 Registrar Venda")
 
