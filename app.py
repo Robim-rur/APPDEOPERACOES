@@ -1,9 +1,11 @@
+# app.py
+
 import streamlit as st
 import pandas as pd
 from datetime import datetime, date
-import os
 import uuid
-import shutil
+import gspread
+from google.oauth2.service_account import Credentials
 
 # =========================================================
 # CONFIGURAÇÃO DA PÁGINA
@@ -17,51 +19,33 @@ st.set_page_config(
 st.title("📊 Gerenciador de Operações - Buy Side")
 
 # =========================================================
-# BANCO DE DADOS PERSISTENTE
+# GOOGLE SHEETS
 # =========================================================
 
-PASTA_DADOS = "database"
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
 
-if not os.path.exists(PASTA_DADOS):
-    os.makedirs(PASTA_DADOS)
+SHEET_ID = "1F96th5Cu0Px4eFWrPfwBIiBpohEtgGk-Gc0O199mnaM"
 
-DB_FILE = os.path.join(
-    PASTA_DADOS,
-    "operacoes.csv"
-)
+ABA_NOME = "operacoes"
 
-TEMP_FILE = os.path.join(
-    PASTA_DADOS,
-    "operacoes_temp.csv"
-)
+@st.cache_resource
+def conectar_planilha():
 
-# =========================================================
-# BACKUP AUTOMÁTICO
-# =========================================================
+    creds = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=SCOPES
+    )
 
-def criar_backup():
+    client = gspread.authorize(creds)
 
-    if os.path.exists(DB_FILE):
+    planilha = client.open_by_key(SHEET_ID)
 
-        pasta_backup = "backups"
+    aba = planilha.worksheet(ABA_NOME)
 
-        if not os.path.exists(pasta_backup):
-            os.makedirs(pasta_backup)
-
-        nome_backup = (
-            f"backup_"
-            f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-        )
-
-        caminho_backup = os.path.join(
-            pasta_backup,
-            nome_backup
-        )
-
-        try:
-            shutil.copy(DB_FILE, caminho_backup)
-        except:
-            pass
+    return aba
 
 # =========================================================
 # FUNÇÕES
@@ -86,123 +70,95 @@ def garantir_colunas(df):
 
     return df
 
-
 def carregar_dados():
 
     try:
 
-        # ==========================================
-        # RECUPERAÇÃO AUTOMÁTICA
-        # ==========================================
+        aba = conectar_planilha()
 
-        if (
-            not os.path.exists(DB_FILE)
-            and os.path.exists(TEMP_FILE)
-        ):
+        dados = aba.get_all_records()
 
-            os.replace(
-                TEMP_FILE,
-                DB_FILE
-            )
+        if len(dados) == 0:
 
-        # ==========================================
-        # CARREGAMENTO
-        # ==========================================
+            df_vazio = pd.DataFrame()
 
-        if os.path.exists(DB_FILE):
+            df_vazio = garantir_colunas(df_vazio)
 
-            df = pd.read_csv(DB_FILE)
+            salvar_dados(df_vazio)
 
-            df = garantir_colunas(df)
+            return df_vazio
 
-            # ======================================
-            # DATAS
-            # ======================================
+        df = pd.DataFrame(dados)
 
-            if "Data Compra" in df.columns:
+        df = garantir_colunas(df)
 
-                df["Data Compra"] = pd.to_datetime(
-                    df["Data Compra"],
-                    errors="coerce"
-                ).dt.date
+        if "Data Compra" in df.columns:
 
-            if "Data Venda" in df.columns:
+            df["Data Compra"] = pd.to_datetime(
+                df["Data Compra"],
+                errors="coerce"
+            ).dt.date
 
-                df["Data Venda"] = pd.to_datetime(
-                    df["Data Venda"],
-                    errors="coerce"
-                ).dt.date
+        if "Data Venda" in df.columns:
 
-            # ======================================
-            # IDs
-            # ======================================
+            df["Data Venda"] = pd.to_datetime(
+                df["Data Venda"],
+                errors="coerce"
+            ).dt.date
 
-            ids_vazios = (
-                df["ID"].isna() |
-                (df["ID"] == "")
-            )
+        ids_vazios = (
+            df["ID"].isna() |
+            (df["ID"] == "")
+        )
 
-            quantidade_ids = ids_vazios.sum()
+        quantidade_ids = ids_vazios.sum()
 
-            if quantidade_ids > 0:
+        if quantidade_ids > 0:
 
-                novos_ids = [
-                    str(uuid.uuid4())[:8]
-                    for _ in range(quantidade_ids)
-                ]
+            novos_ids = [
+                str(uuid.uuid4())[:8]
+                for _ in range(quantidade_ids)
+            ]
 
-                df.loc[
-                    ids_vazios,
-                    "ID"
-                ] = novos_ids
+            df.loc[ids_vazios, "ID"] = novos_ids
 
-            return df
+        return df
 
     except Exception as e:
 
-        st.error(
-            f"Erro ao carregar arquivo: {e}"
-        )
+        st.error(f"Erro ao carregar dados: {e}")
 
-    # ==============================================
-    # DATAFRAME INICIAL
-    # ==============================================
+    dados_iniciais = []
 
-    return garantir_colunas(
-        pd.DataFrame()
-    )
+    df = pd.DataFrame(dados_iniciais)
 
+    return garantir_colunas(df)
 
 def salvar_dados(df):
 
     try:
 
-        criar_backup()
+        aba = conectar_planilha()
 
-        # ==========================================
-        # SALVAMENTO TEMPORÁRIO
-        # ==========================================
+        df_salvar = df.copy()
 
-        df.to_csv(
-            TEMP_FILE,
-            index=False
-        )
+        for coluna in ["Data Compra", "Data Venda"]:
 
-        # ==========================================
-        # SUBSTITUIÇÃO SEGURA
-        # ==========================================
+            if coluna in df_salvar.columns:
 
-        os.replace(
-            TEMP_FILE,
-            DB_FILE
-        )
+                df_salvar[coluna] = df_salvar[coluna].astype(str)
+
+        df_salvar = df_salvar.fillna("")
+
+        dados = [df_salvar.columns.tolist()] + df_salvar.values.tolist()
+
+        aba.clear()
+
+        aba.update(dados)
 
     except Exception as e:
 
-        st.error(
-            f"Erro ao salvar dados: {e}"
-        )
-
+        st.error(f"Erro ao salvar dados: {e}")
 
 def calcular_dias_aberto(data_compra):
 
@@ -210,7 +166,6 @@ def calcular_dias_aberto(data_compra):
         return 0
 
     return (date.today() - data_compra).days
-
 
 def classificar_tempo(dias):
 
@@ -250,8 +205,15 @@ capital_alocado = 0
 if not ops_abertas.empty:
 
     capital_alocado = (
-        ops_abertas["Qtd"].fillna(0) *
-        ops_abertas["Preço Compra"].fillna(0)
+        pd.to_numeric(
+            ops_abertas["Qtd"],
+            errors="coerce"
+        ).fillna(0)
+        *
+        pd.to_numeric(
+            ops_abertas["Preço Compra"],
+            errors="coerce"
+        ).fillna(0)
     ).sum()
 
 ciclos_concluidos = len(ops_encerradas)
@@ -260,9 +222,12 @@ tempo_medio = 0
 
 if not ops_encerradas.empty:
 
-    duracoes_validas = ops_encerradas[
-        "Duração (Dias)"
-    ].dropna()
+    duracoes_validas = pd.to_numeric(
+        ops_encerradas[
+            "Duração (Dias)"
+        ],
+        errors="coerce"
+    ).dropna()
 
     if not duracoes_validas.empty:
 
@@ -275,9 +240,12 @@ lucro_total = 0
 
 if not ops_encerradas.empty:
 
-    lucro_total = ops_encerradas[
-        "Resultado R$"
-    ].fillna(0).sum()
+    lucro_total = pd.to_numeric(
+        ops_encerradas[
+            "Resultado R$"
+        ],
+        errors="coerce"
+    ).fillna(0).sum()
 
 # =========================================================
 # RESUMO EXECUTIVO
@@ -500,8 +468,8 @@ if not df.empty:
         "Resultado R$"
     ].apply(
         lambda x: (
-            f"R$ {x:,.2f}"
-            if pd.notnull(x)
+            f"R$ {float(x):,.2f}"
+            if pd.notnull(x) and x != ""
             else "-"
         )
     )
@@ -577,7 +545,7 @@ if not df_ops.empty:
         editar_qtd = st.number_input(
             "Quantidade",
             min_value=1,
-            value=int(linha["Qtd"]),
+            value=int(float(linha["Qtd"])),
             key="editar_qtd"
         )
 
@@ -830,24 +798,36 @@ with st.expander(
 
     if not ops_encerradas.empty:
 
-        resultado_total = ops_encerradas[
-            "Resultado R$"
-        ].fillna(0).sum()
+        resultado_total = pd.to_numeric(
+            ops_encerradas[
+                "Resultado R$"
+            ],
+            errors="coerce"
+        ).fillna(0).sum()
 
-        retorno_medio = ops_encerradas[
-            "Resultado %"
-        ].fillna(0).mean()
-
-        melhor_trade = ops_encerradas.loc[
+        retorno_medio = pd.to_numeric(
             ops_encerradas[
                 "Resultado %"
-            ].idxmax()
+            ],
+            errors="coerce"
+        ).fillna(0).mean()
+
+        melhor_trade = ops_encerradas.loc[
+            pd.to_numeric(
+                ops_encerradas[
+                    "Resultado %"
+                ],
+                errors="coerce"
+            ).idxmax()
         ]
 
         pior_trade = ops_encerradas.loc[
-            ops_encerradas[
-                "Resultado %"
-            ].idxmin()
+            pd.to_numeric(
+                ops_encerradas[
+                    "Resultado %"
+                ],
+                errors="coerce"
+            ).idxmin()
         ]
 
         st.write(
@@ -863,13 +843,13 @@ with st.expander(
         st.write(
             f"🏆 Melhor ciclo: "
             f"{melhor_trade['Ticker']} "
-            f"({melhor_trade['Resultado %']:.2f}%)"
+            f"({float(melhor_trade['Resultado %']):.2f}%)"
         )
 
         st.write(
             f"📉 Pior ciclo: "
             f"{pior_trade['Ticker']} "
-            f"({pior_trade['Resultado %']:.2f}%)"
+            f"({float(pior_trade['Resultado %']):.2f}%)"
         )
 
         st.divider()
