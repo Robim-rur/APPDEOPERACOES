@@ -631,7 +631,7 @@ df_ops = st.session_state.operacoes.copy()
 
 if not df_ops.empty:
 
-    opcoes_operacoes = {
+        opcoes_operacoes = {
         row["ID"]: (
             f"{row['Ticker']} | "
             f"{row['Data Compra']} | "
@@ -646,7 +646,7 @@ if not df_ops.empty:
         format_func=lambda x: opcoes_operacoes[x]
     )
 
-     linha = df_ops[df_ops["ID"] == operacao_id].iloc[0]
+    linha = df_ops[df_ops["ID"] == operacao_id].iloc[0]
 
     # =====================================================
     # DETALHES DA OPERAÇÃO
