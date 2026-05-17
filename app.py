@@ -57,6 +57,8 @@ def conectar_planilha():
 
 def converter_numero(valor):
 
+   def converter_numero(valor):
+
     if valor is None:
         return None
 
@@ -65,23 +67,42 @@ def converter_numero(valor):
 
     try:
 
+        # Se já for número
+        if isinstance(valor, (int, float)):
+            return float(valor)
+
         texto = str(valor).strip()
 
         texto = texto.replace("R$", "")
         texto = texto.replace("%", "")
         texto = texto.replace(" ", "")
 
-        # Se tiver vírgula e ponto
+        # =================================================
+        # FORMATO BRASILEIRO
+        # Exemplo: 1.234,56
+        # =================================================
+
         if "," in texto and "." in texto:
 
-            # padrão brasileiro
-            texto = texto.replace(".", "")
-            texto = texto.replace(",", ".")
+            if texto.rfind(",") > texto.rfind("."):
 
-        # Apenas vírgula
+                texto = texto.replace(".", "")
+                texto = texto.replace(",", ".")
+
+        # =================================================
+        # APENAS VÍRGULA
+        # Exemplo: 1,93
+        # =================================================
+
         elif "," in texto:
 
             texto = texto.replace(",", ".")
+
+        # =================================================
+        # APENAS PONTO
+        # Exemplo: 1.93
+        # NÃO ALTERA
+        # =================================================
 
         return float(texto)
 
@@ -576,7 +597,7 @@ if not df.empty:
         "Resultado R$"
     ].apply(
         lambda x: (
-            f"R$ {x:,.2f}"
+            f"R$ {float(x):,.2f}"
             if pd.notnull(x)
             else "-"
         )
