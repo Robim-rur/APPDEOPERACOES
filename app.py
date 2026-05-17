@@ -746,70 +746,68 @@ with colb1:
 # REGISTRAR VENDA
 # =====================================================
 
-if linha["Status"] == "Aberta":
+# =====================================================
+# REGISTRAR VENDA (CORRIGIDO)
+# =====================================================
 
-    st.markdown("### 🏁 Registrar Venda")
+st.markdown("### 🏁 Registrar Venda")
 
-    colv1, colv2 = st.columns(2)
+colv1, colv2 = st.columns(2)
 
-    with colv1:
+with colv1:
 
-        data_venda = st.date_input(
-            "Data Venda",
-            datetime.now().date(),
-            key=f"data_venda_{operacao_id}"
-        )
+    data_venda = st.date_input(
+        "Data Venda",
+        datetime.now().date(),
+        key=f"data_venda_{operacao_id}"
+    )
 
-    with colv2:
+with colv2:
 
-        preco_venda = st.number_input(
-            "Preço Venda",
-            min_value=0.01,
-            format="%.2f",
-            key=f"preco_venda_{operacao_id}"
-        )
+    preco_venda = st.number_input(
+        "Preço Venda",
+        min_value=0.01,
+        format="%.2f",
+        key=f"preco_venda_{operacao_id}"
+    )
 
-    if st.button("✅ Confirmar Venda", key=f"confirmar_venda_{operacao_id}"):
+if st.button("✅ Confirmar Venda", key=f"confirmar_venda_{operacao_id}"):
 
-        idx_real = st.session_state.operacoes[
-            st.session_state.operacoes["ID"] == operacao_id
-        ].index[0]
+    idx_real = st.session_state.operacoes[
+        st.session_state.operacoes["ID"] == operacao_id
+    ].index[0]
 
-        preco_compra = float(
-            st.session_state.operacoes.loc[idx_real, "Preço Compra"]
-        )
+    preco_compra = float(
+        st.session_state.operacoes.loc[idx_real, "Preço Compra"]
+    )
 
-        qtd = float(
-            st.session_state.operacoes.loc[idx_real, "Qtd"]
-        )
+    qtd = float(
+        st.session_state.operacoes.loc[idx_real, "Qtd"]
+    )
 
-        dt_compra = st.session_state.operacoes.loc[idx_real, "Data Compra"]
+    dt_compra = st.session_state.operacoes.loc[idx_real, "Data Compra"]
 
-        if isinstance(dt_compra, str):
-            dt_compra = datetime.strptime(dt_compra, "%Y-%m-%d").date()
+    if isinstance(dt_compra, str):
+        dt_compra = datetime.strptime(dt_compra, "%Y-%m-%d").date()
 
-        duracao = (data_venda - dt_compra).days
+    duracao = (data_venda - dt_compra).days
 
-        resultado_pct = ((preco_venda - preco_compra) / preco_compra) * 100
+    resultado_pct = ((preco_venda - preco_compra) / preco_compra) * 100
 
-        resultado_rs = (preco_venda - preco_compra) * qtd
+    resultado_rs = (preco_venda - preco_compra) * qtd
 
-        st.session_state.operacoes.loc[idx_real, "Preço Venda"] = preco_venda
-        st.session_state.operacoes.loc[idx_real, "Data Venda"] = pd.Timestamp(data_venda)
-        st.session_state.operacoes.loc[idx_real, "Duração (Dias)"] = duracao
-        st.session_state.operacoes.loc[idx_real, "Resultado %"] = round(resultado_pct, 2)
-        st.session_state.operacoes.loc[idx_real, "Resultado R$"] = round(resultado_rs, 2)
-        st.session_state.operacoes.loc[idx_real, "Status"] = "Encerrada"
+    st.session_state.operacoes.loc[idx_real, "Preço Venda"] = preco_venda
+    st.session_state.operacoes.loc[idx_real, "Data Venda"] = pd.Timestamp(data_venda)
+    st.session_state.operacoes.loc[idx_real, "Duração (Dias)"] = duracao
+    st.session_state.operacoes.loc[idx_real, "Resultado %"] = round(resultado_pct, 2)
+    st.session_state.operacoes.loc[idx_real, "Resultado R$"] = round(resultado_rs, 2)
+    st.session_state.operacoes.loc[idx_real, "Status"] = "Encerrada"
 
-        salvar_dados(st.session_state.operacoes)
+    salvar_dados(st.session_state.operacoes)
 
-        st.success("Venda registrada!")
+    st.success("Venda registrada!")
 
-        st.rerun()
-
-else:
-
-    st.success("Operação já encerrada.")
+    st.rerun()
 
 else:
 
