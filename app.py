@@ -620,200 +620,195 @@ if not df.empty:
     )
 
 # =========================================================
-# GERENCIAR OPERAÇÕES
+# 🛠️ GERENCIAR OPERAÇÕES (BLOCO BLINDADO)
 # =========================================================
-
-st.divider()
 
 st.subheader("🛠️ Gerenciar Operações")
 
 df_ops = st.session_state.operacoes.copy()
 
-if not df_ops.empty:
+if df_ops.empty:
+    st.info("Nenhuma operação encontrada.")
+    st.stop()
 
-    opcoes_operacoes = {
-        row["ID"]: (
-            f"{row['Ticker']} | "
-            f"{row['Data Compra']} | "
-            f"{row['Status']}"
-        )
-        for _, row in df_ops.iterrows()
-    }
+# =========================================================
+# SELEÇÃO SEGURA
+# =========================================================
 
-    operacao_id = st.selectbox(
-        "Selecione uma operação",
-        options=list(opcoes_operacoes.keys()),
-        format_func=lambda x: opcoes_operacoes[x],
-        key="selecionar_operacao"
-    )
+opcoes_operacoes = {
+    row["ID"]: f"{row['Ticker']} | {row['Data Compra']} | {row['Status']}"
+    for _, row in df_ops.iterrows()
+}
 
-    linha = df_ops[df_ops["ID"] == operacao_id].iloc[0]
+operacao_id = st.selectbox(
+    "Selecione uma operação",
+    list(opcoes_operacoes.keys()),
+    format_func=lambda x: opcoes_operacoes[x],
+    key="select_operacao"
+)
 
-    # =====================================================
-    # DETALHES DA OPERAÇÃO
-    # =====================================================
+if operacao_id not in df_ops["ID"].values:
+    st.error("Operação não encontrada. Selecione novamente.")
+    st.stop()
 
-    st.info(
-        f"""
+linha = df_ops[df_ops["ID"] == operacao_id].iloc[0]
+
+# =========================================================
+# DETALHES (VISUAL FIXO)
+# =========================================================
+
+st.markdown("### 📌 Detalhes da Operação")
+
+st.info(
+    f"""
 📌 Ticker: {linha['Ticker']}
-
 📅 Data Compra: {linha['Data Compra']}
-
 📦 Quantidade: {linha['Qtd']}
-
-💰 Preço Compra: R$ {linha['Preço Compra']:.2f}
-
-🎯 Alvo: R$ {linha['Alvo (3%)']:.2f}
-     colb1, colb2, colb3 = st.columns(3)
-
-    # =====================================================
-    # SALVAR EDIÇÃO
-    # =====================================================
-
-    with colb1:
+💰 Preço Compra: R$ {float(linha['Preço Compra']):.2f}
+🎯 Alvo: R$ {float(linha['Alvo (3%)']):.2f}
 📊 Status: {linha['Status']}
-
 🧠 Estratégia: {linha['Estratégia']}
 """
+)
+
+st.markdown("### ✏️ Editar Operação")
+
+# =========================================================
+# INPUTS (SEMPRE VISÍVEIS E ESTÁVEIS)
+# =========================================================
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    editar_data = st.date_input(
+        "Data Compra",
+        value=linha["Data Compra"],
+        key=f"data_{operacao_id}"
     )
 
-    st.markdown("### ✏️ Editar Operação")
+    editar_ticker = st.text_input(
+        "Ticker",
+        value=linha["Ticker"],
+        key=f"ticker_{operacao_id}"
+    ).upper()
 
-colb1, colb2, colb3 = st.columns(3)
+with col2:
+    editar_qtd = st.number_input(
+        "Quantidade",
+        min_value=1,
+        value=int(linha["Qtd"]) if pd.notnull(linha["Qtd"]) else 1,
+        key=f"qtd_{operacao_id}"
+    )
+
+    editar_preco = st.number_input(
+        "Preço Compra",
+        min_value=0.01,
+        value=float(linha["Preço Compra"]) if pd.notnull(linha["Preço Compra"]) else 0.01,
+        format="%.2f",
+        key=f"preco_{operacao_id}"
+    )
+
+with col3:
+    editar_estrategia = st.text_input(
+        "Estratégia",
+        value=str(linha["Estratégia"]),
+        key=f"estrat_{operacao_id}"
+    )
+
+    novo_alvo = round(editar_preco * 1.03, 2)
+
+    st.info(f"🎯 Novo alvo: R$ {novo_alvo:.2f}")
+
+# =========================================================
+# AÇÕES
+# =========================================================
+
+colb1, colb2 = st.columns(2)
 
 with colb1:
+    if st.button("💾 Salvar Alterações", key=f"save_{operacao_id}"):
 
-    if st.button("💾 Salvar Alterações"):
+        idx_real = df_ops[df_ops["ID"] == operacao_id].index[0]
 
-        idx_real = st.session_state.operacoes[
-            st.session_state.operacoes["ID"] == operacao_id
-        ].index[0]
-
-        st.session_state.operacoes.loc[
-            idx_real, "Data Compra"
-        ] = editar_data
-
-        st.session_state.operacoes.loc[
-            idx_real, "Ticker"
-        ] = editar_ticker
-
-        st.session_state.operacoes.loc[
-            idx_real, "Qtd"
-        ] = editar_qtd
-
-        st.session_state.operacoes.loc[
-            idx_real, "Preço Compra"
-        ] = editar_preco
-
-        st.session_state.operacoes.loc[
-            idx_real, "Alvo (3%)"
-        ] = novo_alvo
-
-        st.session_state.operacoes.loc[
-            idx_real, "Estratégia"
-        ] = editar_estrategia
+        st.session_state.operacoes.loc[idx_real, "Data Compra"] = editar_data
+        st.session_state.operacoes.loc[idx_real, "Ticker"] = editar_ticker
+        st.session_state.operacoes.loc[idx_real, "Qtd"] = editar_qtd
+        st.session_state.operacoes.loc[idx_real, "Preço Compra"] = editar_preco
+        st.session_state.operacoes.loc[idx_real, "Alvo (3%)"] = novo_alvo
+        st.session_state.operacoes.loc[idx_real, "Estratégia"] = editar_estrategia
 
         salvar_dados(st.session_state.operacoes)
 
         st.success("Operação atualizada!")
         st.rerun()
 
-    # =====================================================
-    # EXCLUIR
-    # =====================================================
+with colb2:
+    if st.button("🗑️ Excluir Operação", key=f"del_{operacao_id}"):
 
-    with colb2:
+        st.session_state.operacoes = st.session_state.operacoes[
+            st.session_state.operacoes["ID"] != operacao_id
+        ]
 
-        if st.button("🗑️ Excluir Operação"):
+        salvar_dados(st.session_state.operacoes)
 
-            st.session_state.operacoes = (
-                st.session_state.operacoes[
-                    st.session_state.operacoes["ID"] != operacao_id
-                ]
-            )
+        st.success("Operação excluída!")
+        st.rerun()
 
-            salvar_dados(
-                st.session_state.operacoes
-            )
+# =========================================================
+# REGISTRO DE VENDA (SÓ SE ABERTA)
+# =========================================================
 
-            st.success(
-                "Operação excluída!"
-            )
+if str(linha["Status"]) == "Aberta":
 
-            st.rerun()
+    st.markdown("### 🏁 Registrar Venda")
 
-   # =====================================================
-# REGISTRAR VENDA
-# =====================================================
+    colv1, colv2 = st.columns(2)
 
-# =====================================================
-# REGISTRAR VENDA (CORRIGIDO)
-# =====================================================
+    with colv1:
+        data_venda = st.date_input(
+            "Data Venda",
+            datetime.now().date(),
+            key=f"data_venda_{operacao_id}"
+        )
 
-st.markdown("### 🏁 Registrar Venda")
+    with colv2:
+        preco_venda = st.number_input(
+            "Preço Venda",
+            min_value=0.01,
+            format="%.2f",
+            key=f"preco_venda_{operacao_id}"
+        )
 
-colv1, colv2 = st.columns(2)
+    if st.button("✅ Confirmar Venda", key=f"venda_{operacao_id}"):
 
-with colv1:
+        idx_real = df_ops[df_ops["ID"] == operacao_id].index[0]
 
-    data_venda = st.date_input(
-        "Data Venda",
-        datetime.now().date(),
-        key=f"data_venda_{operacao_id}"
-    )
+        preco_compra = float(st.session_state.operacoes.loc[idx_real, "Preço Compra"])
+        qtd = float(st.session_state.operacoes.loc[idx_real, "Qtd"])
 
-with colv2:
+        dt_compra = st.session_state.operacoes.loc[idx_real, "Data Compra"]
 
-    preco_venda = st.number_input(
-        "Preço Venda",
-        min_value=0.01,
-        format="%.2f",
-        key=f"preco_venda_{operacao_id}"
-    )
+        if isinstance(dt_compra, str):
+            dt_compra = datetime.strptime(dt_compra, "%Y-%m-%d").date()
 
-if st.button("✅ Confirmar Venda", key=f"confirmar_venda_{operacao_id}"):
+        duracao = (data_venda - dt_compra).days
+        resultado_pct = ((preco_venda - preco_compra) / preco_compra) * 100
+        resultado_rs = (preco_venda - preco_compra) * qtd
 
-    idx_real = st.session_state.operacoes[
-        st.session_state.operacoes["ID"] == operacao_id
-    ].index[0]
+        st.session_state.operacoes.loc[idx_real, "Preço Venda"] = preco_venda
+        st.session_state.operacoes.loc[idx_real, "Data Venda"] = pd.Timestamp(data_venda)
+        st.session_state.operacoes.loc[idx_real, "Duração (Dias)"] = duracao
+        st.session_state.operacoes.loc[idx_real, "Resultado %"] = round(resultado_pct, 2)
+        st.session_state.operacoes.loc[idx_real, "Resultado R$"] = round(resultado_rs, 2)
+        st.session_state.operacoes.loc[idx_real, "Status"] = "Encerrada"
 
-    preco_compra = float(
-        st.session_state.operacoes.loc[idx_real, "Preço Compra"]
-    )
+        salvar_dados(st.session_state.operacoes)
 
-    qtd = float(
-        st.session_state.operacoes.loc[idx_real, "Qtd"]
-    )
-
-    dt_compra = st.session_state.operacoes.loc[idx_real, "Data Compra"]
-
-    if isinstance(dt_compra, str):
-        dt_compra = datetime.strptime(dt_compra, "%Y-%m-%d").date()
-
-    duracao = (data_venda - dt_compra).days
-
-    resultado_pct = ((preco_venda - preco_compra) / preco_compra) * 100
-
-    resultado_rs = (preco_venda - preco_compra) * qtd
-
-    st.session_state.operacoes.loc[idx_real, "Preço Venda"] = preco_venda
-    st.session_state.operacoes.loc[idx_real, "Data Venda"] = pd.Timestamp(data_venda)
-    st.session_state.operacoes.loc[idx_real, "Duração (Dias)"] = duracao
-    st.session_state.operacoes.loc[idx_real, "Resultado %"] = round(resultado_pct, 2)
-    st.session_state.operacoes.loc[idx_real, "Resultado R$"] = round(resultado_rs, 2)
-    st.session_state.operacoes.loc[idx_real, "Status"] = "Encerrada"
-
-    salvar_dados(st.session_state.operacoes)
-
-    st.success("Venda registrada!")
-
-    st.rerun()
+        st.success("Venda registrada!")
+        st.rerun()
 
 else:
-
-    st.info(
-        "Nenhuma operação encontrada."
-    )
+    st.success("Operação já encerrada.")
 
 # =========================================================
 # ESTATÍSTICAS
