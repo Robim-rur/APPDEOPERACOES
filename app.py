@@ -57,6 +57,8 @@ def conectar_planilha():
 
 def converter_numero(valor):
 
+   def converter_numero(valor):
+
     if valor is None:
         return None
 
@@ -65,10 +67,6 @@ def converter_numero(valor):
 
     try:
 
-        # Se já for número
-        if isinstance(valor, (int, float)):
-            return float(valor)
-
         texto = str(valor).strip()
 
         texto = texto.replace("R$", "")
@@ -76,35 +74,31 @@ def converter_numero(valor):
         texto = texto.replace(" ", "")
 
         # =================================================
-        # FORMATO BRASILEIRO
-        # Exemplo: 1.234,56
+        # CASOS COM VÍRGULA
         # =================================================
 
-        if "," in texto and "." in texto:
+        if "," in texto:
 
-            # Brasileiro
-            if texto.rfind(",") > texto.rfind("."):
-
-                texto = texto.replace(".", "")
-                texto = texto.replace(",", ".")
-
-            # Americano
-            else:
-
-                pass
-
-        # =================================================
-        # APENAS VÍRGULA
-        # Exemplo: 1,93
-        # =================================================
-
-        elif "," in texto:
-
+            texto = texto.replace(".", "")
             texto = texto.replace(",", ".")
 
-        return float(texto)
+            return float(texto)
+
+        # =================================================
+        # CASOS SEM VÍRGULA
+        # =================================================
+
+        numero = float(texto)
+
+        # Se veio 193 mas deveria ser 1.93
+        if numero > 100 and numero < 1000 and "." not in texto:
+
+            return numero / 100
+
+        return numero
 
     except Exception:
+
         return None
 
 # =========================================================
