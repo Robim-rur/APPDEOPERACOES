@@ -650,6 +650,27 @@ if not df_ops.empty:
 
     st.markdown("### ✏️ Editar Operação")
 
+# =====================================================
+# DETALHES DA OPERAÇÃO
+# =====================================================
+
+st.info(
+    f"""
+📌 Ticker: {linha['Ticker']}
+
+📅 Data Compra: {linha['Data Compra']}
+
+📦 Quantidade: {linha['Qtd']}
+
+💰 Preço Compra: R$ {linha['Preço Compra']:.2f}
+
+🎯 Alvo: R$ {linha['Alvo (3%)']:.2f}
+
+📊 Status: {linha['Status']}
+
+🧠 Estratégia: {linha['Estratégia']}
+"""
+)
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -798,12 +819,13 @@ if not df_ops.empty:
 
         with colv2:
 
-            preco_venda = st.number_input(
-                "Preço Venda",
-                min_value=0.01,
-                format="%.2f",
-                key="preco_venda"
-            )
+           preco_venda = st.number_input(
+    f"Preço Venda (Compra: R$ {linha['Preço Compra']:.2f})",
+    min_value=0.01,
+    value=float(linha["Alvo (3%)"]),
+    format="%.2f",
+    key="preco_venda"
+)
 
         if st.button("✅ Confirmar Venda"):
 
