@@ -918,6 +918,7 @@ with st.expander(
     ]
 
     if not ops_encerradas.empty:
+
         resultado_total = ops_encerradas[
             "Resultado R$"
         ].fillna(0).sum()
@@ -925,10 +926,6 @@ with st.expander(
         retorno_medio = ops_encerradas[
             "Resultado %"
         ].fillna(0).mean()
-
-        resultado_pct_validos = ops_encerradas.dropna(
-            subset=["Resultado %"]
-        )
 
         st.write(
             f"💰 Resultado acumulado: "
@@ -940,14 +937,22 @@ with st.expander(
             f"{retorno_medio:.2f}%"
         )
 
+        resultado_pct_validos = ops_encerradas.dropna(
+            subset=["Resultado %"]
+        )
+
         if not resultado_pct_validos.empty:
 
             melhor_trade = resultado_pct_validos.loc[
-                resultado_pct_validos["Resultado %"].idxmax()
+                resultado_pct_validos[
+                    "Resultado %"
+                ].idxmax()
             ]
 
             pior_trade = resultado_pct_validos.loc[
-                resultado_pct_validos["Resultado %"].idxmin()
+                resultado_pct_validos[
+                    "Resultado %"
+                ].idxmin()
             ]
 
             st.write(
@@ -961,61 +966,6 @@ with st.expander(
                 f"{pior_trade['Ticker']} "
                 f"({pior_trade['Resultado %']:.2f}%)"
             )
-        resultado_total = ops_encerradas[
-            "Resultado R$"
-        ].fillna(0).sum()
-
-        retorno_medio = ops_encerradas[
-            "Resultado %"
-        ].fillna(0).mean()
-
-       resultado_pct_validos = ops_encerradas.dropna(
-    subset=["Resultado %"]
-)
-
-if not resultado_pct_validos.empty:
-
-    melhor_trade = resultado_pct_validos.loc[
-        resultado_pct_validos["Resultado %"].idxmax()
-    ]
-
-    pior_trade = resultado_pct_validos.loc[
-        resultado_pct_validos["Resultado %"].idxmin()
-    ]
-
-    st.write(
-        f"🏆 Melhor ciclo: "
-        f"{melhor_trade['Ticker']} "
-        f"({melhor_trade['Resultado %']:.2f}%)"
-    )
-
-    st.write(
-        f"📉 Pior ciclo: "
-        f"{pior_trade['Ticker']} "
-        f"({pior_trade['Resultado %']:.2f}%)"
-    )
-
-        st.write(
-            f"💰 Resultado acumulado: "
-            f"R$ {resultado_total:,.2f}"
-        )
-
-        st.write(
-            f"📊 Retorno médio: "
-            f"{retorno_medio:.2f}%"
-        )
-
-        st.write(
-            f"🏆 Melhor ciclo: "
-            f"{melhor_trade['Ticker']} "
-            f"({melhor_trade['Resultado %']:.2f}%)"
-        )
-
-        st.write(
-            f"📉 Pior ciclo: "
-            f"{pior_trade['Ticker']} "
-            f"({pior_trade['Resultado %']:.2f}%)"
-        )
 
         st.divider()
 
