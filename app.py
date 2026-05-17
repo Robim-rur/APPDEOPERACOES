@@ -108,6 +108,38 @@ def converter_numero(valor):
     except:
         return None
 
+        # =================================================
+        # FORMATO BRASILEIRO
+        # Exemplo: 1.234,56
+        # =================================================
+
+        if "," in texto and "." in texto:
+
+            if texto.rfind(",") > texto.rfind("."):
+
+                texto = texto.replace(".", "")
+                texto = texto.replace(",", ".")
+
+        # =================================================
+        # APENAS VÍRGULA
+        # Exemplo: 1,93
+        # =================================================
+
+        elif "," in texto:
+
+            texto = texto.replace(",", ".")
+
+        # =================================================
+        # APENAS PONTO
+        # Exemplo: 1.93
+        # NÃO ALTERA
+        # =================================================
+
+        return float(texto)
+
+    except:
+        return None
+
 # =========================================================
 # GARANTIR COLUNAS
 # =========================================================
