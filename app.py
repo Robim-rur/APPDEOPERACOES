@@ -47,7 +47,17 @@ def conectar_planilha():
 
     planilha = client.open_by_key(SHEET_ID)
 
+try:
     aba = planilha.worksheet(ABA_NOME)
+
+except:
+    aba = planilha.add_worksheet(
+        title=ABA_NOME,
+        rows=1000,
+        cols=20
+    )
+
+return aba
 
 
 # =========================================================
