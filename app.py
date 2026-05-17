@@ -643,7 +643,7 @@ if not df_ops.empty:
     operacao_id = st.selectbox(
         "Selecione uma operação",
         options=list(opcoes_operacoes.keys()),
-        format_func=lambda x: opcoes_operacoes[x]
+        format_func=lambda x: opcoes_operacoes[x],
         key="selecionar_operacao"
     )
 
