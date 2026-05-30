@@ -882,24 +882,28 @@ with st.expander(
 
         st.subheader("🏅 Ranking por Ticker")
 
-        ranking = (
-            ops_encerradas
-            .groupby("Ticker")
-            .agg({
-                "Resultado R$": "sum",
-                "Resultado %": "mean",
-                "Duração (Dias)": "mean"
-            })
-            .rename(columns={
-                "Resultado R$": "Lucro Total R$",
-                "Resultado %": "Retorno Médio %",
-                "Duração (Dias)": "Média Dias"
-            })
-            .sort_values(
-                by="Lucro Total R$",
-                ascending=False
-            )
-        )
+       ranking = (
+    ops_encerradas
+    .groupby("Ticker")
+    .agg({
+        "Estratégia": lambda x: " | ".join(
+            sorted(set(str(v) for v in x if pd.notnull(v)))
+        ),
+        "Resultado R$": "sum",
+        "Resultado %": "mean",
+        "Duração (Dias)": "mean"
+    })
+    .rename(columns={
+        "Estratégia": "Setup(s)",
+        "Resultado R$": "Lucro Total R$",
+        "Resultado %": "Retorno Médio %",
+        "Duração (Dias)": "Média Dias"
+    })
+    .sort_values(
+        by="Lucro Total R$",
+        ascending=False
+    )
+)
 
         st.dataframe(
             ranking,
