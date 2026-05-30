@@ -882,7 +882,7 @@ with st.expander(
 
         st.subheader("🏅 Ranking por Ticker")
 
-       ranking = (
+        ranking = (
     ops_encerradas
     .groupby("Ticker")
     .agg({
